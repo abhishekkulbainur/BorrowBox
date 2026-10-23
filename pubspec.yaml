@@ -1,0 +1,74 @@
+name: lendnborrow
+description: "BorrowBox : Share More. Own Less. A minimal, offline-first Flutter app to track items you lend or borrow."
+
+# Authors: Abhishek Kulbainur & Snehal Mascarenhas
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+4
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # state management
+  flutter_riverpod: ^3.0.0-dev.17
+  riverpod_annotation: ^3.0.0-dev.17
+
+  # local database
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+  # UI
+  flex_color_scheme: ^8.2.0
+  material_symbols_icons: ^4.2858.1 
+
+  # image picker
+  image_picker: ^1.2.0
+
+  # image compression
+  flutter_image_compress: ^2.4.0
+  uuid: ^4.6.0
+  qr_flutter: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # code generation
+  build_runner:
+  riverpod_generator: ^3.0.0-dev.17
+
+  # linting
+  custom_lint:
+  riverpod_lint: ^3.0.0-dev.17
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/db/lendnborrow.db
+
+flutter_intl:
+  enabled: true
+  arb_dir: l10n
+  output_dir: lib/l10n
+  class_name: AppLocalizations
+  synthetic_package: true
+
+better_imports:
+  ignore_files:
+    - app_localizations
+    - app_localizations_de
+    - app_localizations_en

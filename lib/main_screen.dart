@@ -1,0 +1,216 @@
+// Flutter Imports
+import "package:flutter/material.dart";
+import "package:flutter/services.dart";
+
+// Package Imports
+import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:flutter_riverpod/legacy.dart";
+import "package:material_symbols_icons/symbols.dart";
+
+// Project Imports
+import "package:lendnborrow/core/provider/item_transaction_provider.dart";
+import "package:lendnborrow/core/utils/colors.dart";
+import "package:lendnborrow/core/utils/extensions.dart";
+import "package:lendnborrow/core/utils/screen_sizes.dart";
+import "package:lendnborrow/feature/activity/activity_screen.dart";
+import "package:lendnborrow/feature/borrowed/borrowed_screen.dart";
+import "package:lendnborrow/feature/communities/communities_screen.dart";
+import "package:lendnborrow/feature/explore/explore_screen.dart";
+import "package:lendnborrow/feature/home/home_screen.dart";
+import "package:lendnborrow/core/widgets/add_item_form.dart";
+import "package:lendnborrow/feature/lent/lent_screen.dart";
+import "package:lendnborrow/feature/profile/profile_screen.dart";
+import "package:lendnborrow/l10n/app_localizations.dart";
+
+final currentTabIndexProvider = StateProvider<int>((ref) => 0);
+final lastBackPressedProvider = StateProvider<DateTime?>((ref) => null);
+
+class MainScreen extends ConsumerStatefulWidget {
+  final Widget child;
+
+  const MainScreen({super.key, required this.child});
+
+  @override
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends ConsumerState<MainScreen> {
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  DateTime? lastBackPressTime;
+
+  late final PageController pageController;
+  bool isBarVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    pageController = PageController(
+      initialPage: ref.read(currentTabIndexProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentIndex = ref.watch(currentTabIndexProvider);
+    final localizations = AppLocalizations.of(context)!;
+    final displayAddItemButton =
+        currentIndex == getRouteIndex(LentScreen.path) ||
+        currentIndex == getRouteIndex(BorrowedScreen.path);
+
+    ref.listen(currentTabIndexProvider, (previous, next) {
+      if (next != pageController.page?.round()) {
+        pageController.jumpToPage(next);
+      }
+    });
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final modalRoute = ModalRoute.of(context);
+        if (modalRoute?.isCurrent == false) {
+          context.pop();
+          return;
+        }
+
+        final now = DateTime.now();
+        const duration = Duration(seconds: 2);
+
+        if (lastBackPressTime == null ||
+            now.difference(lastBackPressTime!) > duration) {
+          lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.prompt_for_exit),
+              duration: duration,
+            ),
+          );
+
+          return;
+        }
+
+        lastBackPressTime = null;
+        SystemNavigator.pop();
+      },
+      child: SafeArea(
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          key: scaffoldKey,
+          backgroundColor: surfaceDimColor(context),
+          body: PageView(
+            controller: pageController,
+            onPageChanged: (index) {
+              ref.read(currentTabIndexProvider.notifier).state = index;
+            },
+            children: const [
+              HomeScreen(),
+              ExploreScreen(),
+              ActivityScreen(),
+              CommunitiesScreen(),
+              ProfileScreen(),
+            ],
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: currentIndex,
+            selectedItemColor: primaryColor(context),
+            selectedIconTheme: IconThemeData(
+              color: secondaryColor(context),
+              size: 28,
+            ),
+            unselectedIconTheme: IconThemeData(
+              color: primaryColor(context),
+              size: 24,
+            ),
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            onTap: (index) {
+              ref.read(currentTabIndexProvider.notifier).state = index;
+            },
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Symbols.home),
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Symbols.search),
+                label: "Explore",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Symbols.swap_horiz),
+                label: "Activity",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Symbols.groups),
+                label: "Circles",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Symbols.person),
+                label: "Profile",
+              ),
+            ],
+            type: BottomNavigationBarType.fixed,
+          ),
+          floatingActionButton: displayAddItemButton
+              ? getAddItemButton(context, ref)
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+Widget getAddItemButton(BuildContext context, WidgetRef ref) {
+  return FloatingActionButton(
+    onPressed: () async {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        enableDrag: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) => Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            color: surfaceDimColor(context),
+          ),
+          constraints: BoxConstraints(minHeight: screenHeight(context, 0.5)),
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: AddItemForm(),
+          ),
+        ),
+      );
+
+      // Refresh the correct list based on active tab
+      final idx = ref.read(currentTabIndexProvider);
+      if (idx == getRouteIndex(LentScreen.path)) {
+        ref.invalidate(lentItemsProvider);
+      } else if (idx == getRouteIndex(BorrowedScreen.path)) {
+        ref.invalidate(borrowedItemsProvider);
+      }
+    },
+    child: const Icon(Symbols.add),
+  );
+}
+
+int getRouteIndex(String path) {
+  final bottomRoutes = [
+    HomeScreen.path,
+    ExploreScreen.path,
+    ActivityScreen.path,
+    CommunitiesScreen.path,
+    ProfileScreen.path,
+  ];
+
+  return bottomRoutes.indexWhere((route) => route == path);
+}
