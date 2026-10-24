@@ -147,39 +147,12 @@ Please discuss substantial changes before submitting a large pull request.
 ## 👥 Authors & Project Owners
 
 **Abhishek Kulbainur**  
-Co-Developer & Project Owner
+Developer & Project Owner
 
 **Snehal Mascarenhas**  
 Co-Developer & Project Owner
 
 BorrowBox is developed collaboratively by Abhishek Kulbainur and Snehal Mascarenhas, with a shared focus on simplicity, privacy, and offline-first software.
-
-## 📄 License
-
-BorrowBox uses the **BorrowBox Source-Available License**. Refer to [`LICENSE`](LICENSE) for the complete terms.
-
-Summary of the stated license:
-
-- **Personal use:** Viewing, modifying, compiling, and using the source code for personal, non-commercial purposes is permitted.
-- **Commercial distribution:** Commercial distribution of binaries requires explicit permission.
-- **Share-alike:** Derivative works must use the same license, include attribution to Abhishek Kulbainur and Snehal Mascarenhas, and make the complete source code publicly available.
-- **Name and branding:** Use of the BorrowBox name or logo requires permission.
-- **Warranty:** The software is provided without warranty, subject to the full license terms.
-
-This summary is for convenience only and does not replace the `LICENSE` file.
-
-## 💙 Support Privacy-Respecting Software
-
-If a store version is available, purchasing it can help support continued maintenance, bug fixes, accessibility improvements, and additional language support.
-
-If you prefer to build the application yourself, personal non-commercial self-building is permitted under the stated license terms.
-
-## 🔐 Privacy Policy
-
-See [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) for the full privacy policy.
-
----
-
 <p align="center">
 
 **BORROWBOX**  
