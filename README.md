@@ -133,17 +133,6 @@ To contribute a translation:
 
 Contributions for additional languages and accessibility improvements are welcome.
 
-## 🤝 Contributing
-
-Contributions are welcome, especially translations, accessibility improvements, bug fixes, and usability enhancements.
-
-- **Issues:** Report bugs, suggest features, or help with existing issues.
-- **Code:** Keep pull requests focused and follow the project's existing coding style.
-- **Testing:** Run relevant checks and tests before submitting changes.
-- **Documentation:** Help improve setup instructions and clarify application behavior.
-
-Please discuss substantial changes before submitting a large pull request.
-
 ## 👥 Authors & Project Owners
 
 **Abhishek Kulbainur**  
@@ -154,10 +143,5 @@ Co-Developer & Project Owner
 
 BorrowBox is developed collaboratively by Abhishek Kulbainur and Snehal Mascarenhas, with a shared focus on simplicity, privacy, and offline-first software.
 <p align="center">
-
-**BORROWBOX**  
-*Share More. Own Less.*
-
-Designed and developed by **Abhishek Kulbainur & Snehal Mascarenhas**
 
 </p>
