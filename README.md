@@ -1,73 +1,190 @@
-# BorrowBox : Share More. Own Less.
+# BorrowBox — Share More. Own Less.
 
-A minimal, offline-first Flutter app to track items you lend or borrow. No accounts, no cloud, no surprises—just record who borrowed what, when it was returned, and keep a simple history.
+A minimal, privacy-focused, offline-first Flutter application for tracking items you lend and borrow. Record who borrowed what, manage returns, attach optional photos, and maintain a simple lending history — all without accounts, cloud synchronization, advertisements, or tracking.
 
-## Features
-- Home overview with quick sections for Borrowed, Lent, and History
-- Add/Edit items with notes
-- Mark items as returned and keep a history
-- Optional photos: take a photo or pick from gallery (saved to db only, not phone)
-- Local database with Export/Import backups (to/from Files/Downloads)
-- Settings screen
-- Dark/Light/System theme
-- 100% offline: no internet permission, no analytics, no ads, no tracking
+## ✨ Features
 
-## Why another app?
-Many existing “lend/borrow” trackers feel stuck or unfriendly. This project exists because:
-- Many apps are outdated or abandoned
-- Old-looking and cluttered UIs
-- Paywalls for basic functionality
-- Ads in core flows
-- Tracking and telemetry without valid reasons
-- Fed up with compromises—this app is simple, modern, private, and offline-first
+- **Home Dashboard:** Quick overview of borrowed items, lent items, and lending history.
+- **Item Management:** Add and edit items with notes and relevant details.
+- **Return Tracking:** Mark items as returned and preserve their history.
+- **Optional Photos:** Take photos or select them from the gallery. Photos are stored in the local database.
+- **Local Database:** Keep personal lending records on your device.
+- **Backup & Restore:** Export and import database backups through Files or Downloads.
+- **Settings:** Manage application preferences.
+- **Theme Support:** Choose Dark, Light, or System theme.
+- **Offline-First:** Designed to work without an internet connection.
 
-## Privacy and Offline Guarantees
-- No data tracking
-- No data collecting
-- No telemetry
-- No ads
-- No Google Play Services / Firebase dependency
-- No network dependency (no internet permission; works fully offline)
-- All data stays on device; backups are files you explicitly export/import
-- No hidden background jobs, no remote config—what you see is what you get
+## 🎯 Why BorrowBox?
 
-## Why buy the store version instead of self-building?
-The license allows personal, non‑commercial self-builds, but purchasing on the App Store/Google Play meaningfully supports this project:
-- Funds ongoing maintenance, bug fixes, and new features (like more languages and accessibility)
-- Keeps the app ad‑free, tracker‑free, and source‑available
-- Provides convenience (automatic updates, vetted/signatured binaries)
-- Sends a clear signal that users value private, offline‑first software
+Many lending-tracker applications can feel outdated, cluttered, or unnecessarily restrictive. Some introduce advertisements, paywalls for basic features, or tracking mechanisms that users do not need.
 
-If you can, please buy the store version to support sustainable privacy‑respecting apps. If you prefer, you can still build locally for personal use.
+BorrowBox aims to provide a simpler alternative:
 
-## Privacy Policy
-See the full policy here: [PRIVACY_POLICY.md](PRIVACY_POLICY.md)
+- A modern, user-friendly interface.
+- Essential lending and borrowing features without unnecessary complexity.
+- No advertisements interrupting core workflows.
+- No unnecessary telemetry or tracking.
+- Private, locally stored records.
+- A straightforward experience focused on lending management.
 
-## Authors & Owners
-- **Abhishek Kulbainur**
-- **Snehal Mascarenhas**
+**Our philosophy:** Your lending records belong to you.
 
-## License (Short Summary)
-This project uses the “BorrowBox Source-Available License.” See [LICENSE](LICENSE) for full terms. In short:
-- Personal use: You may view, modify, compile, use, and distribute source or binaries for non-commercial/personal use.
-- No commercial distribution of binaries without explicit permission.
-- Share-alike: Derivative works must use the same license, include attribution to Abhishek Kulbainur & Snehal Mascarenhas, and make full source code publicly available.
-- Name and branding: Do not use the app name/logo without permission.
-- No warranty.
+## 🔒 Privacy & Offline Guarantees
 
-## Contributing
+BorrowBox is designed around privacy and local data ownership.
 
-Contributions are welcome — especially translations.
+- **No accounts required.**
+- **No data tracking or analytics.**
+- **No advertisements.**
+- **No telemetry.**
+- **No Google Play Services or Firebase dependency.**
+- **No internet permission or network dependency.**
+- **Local data storage:** Records remain on the device.
+- **User-controlled backups:** Data leaves the device only when you explicitly export a backup.
+- **No hidden background jobs or remote configuration.**
 
-- Issues: report bugs, request features, or pick up “help wanted” tasks.
-- Code: keep PRs small, follow existing style, and run linters/tests.
-- Docs: improvements and clarifications are appreciated.
+The application is intended to function fully offline, without relying on cloud services.
 
-### Translating
+## 🛠️ Technology Stack
 
-This project uses ARB files via flutter_intl.
+| Technology | Purpose |
+|---|---|
+| Flutter | Mobile application framework |
+| Dart | Primary programming language |
+| Flutter Riverpod | State management |
+| SQLite / sqflite | Local database and persistent records |
+| Kotlin | Native Android integration |
+| Flutter MethodChannel | Communication between Flutter and native Android code |
+| Android Storage Access Framework (SAF) | Database backup and restore |
+| image_picker | Camera and gallery image selection |
+| flutter_image_compress | Image compression |
+| Flutter localization / ARB | Language and localization support |
 
-1) Use l10n/app_en.arb as the source of keys/messages.
-2) Add l10n/app_<lang>.arb (e.g., app_de.arb, app_es.arb) and translate values.
-3) Build/run the app; the Flutter Intl generator produces AppLocalizations in lib/l10n.
-4) If needed, add your locale to supportedLocales in MaterialApp.
+## 🏗️ Architecture Overview
+
+BorrowBox follows an offline-first architecture:
+
+1. **Presentation Layer:** Flutter screens and user interface.
+2. **State Management:** Riverpod manages application state.
+3. **Application Logic:** Handles item management, lending records, returns, and history.
+4. **Local Persistence:** SQLite stores personal lending records and associated local data.
+5. **Native Android Integration:** Kotlin and Flutter MethodChannel support database export and restore through Android's Storage Access Framework.
+
+All personal lending records are managed locally. The application does not depend on a cloud backend for its core functionality.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Flutter SDK
+- Dart SDK compatible with the project
+- Android Studio or Visual Studio Code
+- Android SDK and an emulator or physical Android device
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone <YOUR_REPOSITORY_URL>
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd BorrowBox
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   flutter pub get
+   ```
+
+4. Run the application:
+
+   ```bash
+   flutter run
+   ```
+
+Replace `<YOUR_REPOSITORY_URL>` with the actual Git repository URL. If your repository uses a different directory name, navigate to that directory instead.
+
+## 📦 Backup & Restore
+
+BorrowBox supports user-initiated database export and import.
+
+- Export a backup to a location selected by the user.
+- Keep a backup in Files or Downloads.
+- Restore records from a previously exported backup.
+
+**Important:** Keep backup files secure. Anyone with access to an unprotected backup may be able to access its contents.
+
+## 🌍 Localization
+
+BorrowBox uses ARB localization files with Flutter's localization tooling.
+
+To contribute a translation:
+
+1. Use `l10n/app_en.arb` as the source for translation keys and messages.
+2. Create a language file, such as `l10n/app_de.arb` or `l10n/app_es.arb`.
+3. Translate the message values while preserving the existing keys.
+4. Run the application or localization generator to produce the required localization classes.
+5. Add the locale to `supportedLocales` in `MaterialApp` if necessary.
+
+Contributions for additional languages and accessibility improvements are welcome.
+
+## 🤝 Contributing
+
+Contributions are welcome, especially translations, accessibility improvements, bug fixes, and usability enhancements.
+
+- **Issues:** Report bugs, suggest features, or help with existing issues.
+- **Code:** Keep pull requests focused and follow the project's existing coding style.
+- **Testing:** Run relevant checks and tests before submitting changes.
+- **Documentation:** Help improve setup instructions and clarify application behavior.
+
+Please discuss substantial changes before submitting a large pull request.
+
+## 👥 Authors & Project Owners
+
+**Abhishek Kulbainur**  
+Co-Developer & Project Owner
+
+**Snehal Mascarenhas**  
+Co-Developer & Project Owner
+
+BorrowBox is developed collaboratively by Abhishek Kulbainur and Snehal Mascarenhas, with a shared focus on simplicity, privacy, and offline-first software.
+
+## 📄 License
+
+BorrowBox uses the **BorrowBox Source-Available License**. Refer to [`LICENSE`](LICENSE) for the complete terms.
+
+Summary of the stated license:
+
+- **Personal use:** Viewing, modifying, compiling, and using the source code for personal, non-commercial purposes is permitted.
+- **Commercial distribution:** Commercial distribution of binaries requires explicit permission.
+- **Share-alike:** Derivative works must use the same license, include attribution to Abhishek Kulbainur and Snehal Mascarenhas, and make the complete source code publicly available.
+- **Name and branding:** Use of the BorrowBox name or logo requires permission.
+- **Warranty:** The software is provided without warranty, subject to the full license terms.
+
+This summary is for convenience only and does not replace the `LICENSE` file.
+
+## 💙 Support Privacy-Respecting Software
+
+If a store version is available, purchasing it can help support continued maintenance, bug fixes, accessibility improvements, and additional language support.
+
+If you prefer to build the application yourself, personal non-commercial self-building is permitted under the stated license terms.
+
+## 🔐 Privacy Policy
+
+See [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) for the full privacy policy.
+
+---
+
+<p align="center">
+
+**BORROWBOX**  
+*Share More. Own Less.*
+
+Designed and developed by **Abhishek Kulbainur & Snehal Mascarenhas**
+
+</p>
