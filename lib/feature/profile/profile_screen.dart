@@ -6,10 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
+import 'package:lendnborrow/core/models/user_profile.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
+import 'package:lendnborrow/core/widgets/empty_state_view.dart';
+import 'package:lendnborrow/core/widgets/status_badge.dart';
+import 'package:lendnborrow/feature/admin/admin_dashboard_screen.dart';
 import 'package:lendnborrow/feature/auth/auth_screen.dart';
+import 'package:lendnborrow/feature/explore/item_details_screen.dart';
 import 'package:lendnborrow/feature/history/history_screen.dart';
 import 'package:lendnborrow/feature/settings/settings_screen.dart';
 
@@ -29,14 +35,19 @@ class ProfileScreen extends ConsumerWidget {
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            "Profile",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           actions: [
             IconButton(
               icon: const Icon(Symbols.settings),
               tooltip: "Settings",
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
                 );
               },
             ),
@@ -48,15 +59,13 @@ class ProfileScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: theme.colorScheme.primaryContainer.withAlpha(120),
-                child: Icon(Symbols.person, size: 44, color: theme.colorScheme.primary),
-              ),
+              const AppLogo(size: 110, borderRadius: 16),
               const SizedBox(height: 16),
               Text(
                 "Welcome to BorrowBox",
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -66,73 +75,14 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () => Navigator.of(context).pushNamed(AuthScreen.path),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(AuthScreen.path),
                 icon: const Icon(Icons.login),
                 label: const Text("Sign In or Register"),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
               ),
-              const SizedBox(height: 32),
-              const Divider(),
-              const SizedBox(height: 16),
-
-              // Explicitly Labelled Developer Mode
-              if (auth.isDevMode) ...[
-                Card(
-                  elevation: 0,
-                  color: Colors.amber.withAlpha(25),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.amber.withAlpha(90)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.developer_mode, size: 18, color: Colors.amber),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Developer & Evaluation Mode Only",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber[900],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Quickly switch test accounts to evaluate multi-user transactions on a single device:",
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => auth.switchDemoUser("user_abhishek"),
-                                child: const Text("Abhishek (Owner)"),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => auth.switchDemoUser("user_snehal"),
-                                child: const Text("Snehal (Borrower)"),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -144,7 +94,13 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Row(
+          children: [
+            AppLogo.icon(size: 28, borderRadius: 6),
+            SizedBox(width: 10),
+            Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Symbols.logout),
@@ -176,7 +132,9 @@ class ProfileScreen extends ConsumerWidget {
               elevation: 0.5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(60)),
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withAlpha(60),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -204,26 +162,64 @@ class ProfileScreen extends ConsumerWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (currentUser.isVerified) ...[
+                        if (currentUser.isAdmin) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E5FF).withAlpha(40),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF00E5FF),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Text(
+                              "ADMIN",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF00E5FF),
+                              ),
+                            ),
+                          ),
+                        ] else if (currentUser.isVerified) ...[
                           const SizedBox(width: 4),
-                          Icon(Icons.verified, size: 18, color: Colors.blue[600]),
+                          Icon(
+                            Icons.verified,
+                            size: 18,
+                            color: Colors.blue[600],
+                          ),
                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currentUser.email,
-                      style: TextStyle(color: theme.colorScheme.outline, fontSize: 13),
+                      style: TextStyle(
+                        color: theme.colorScheme.outline,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Symbols.location_on, size: 14, color: theme.colorScheme.outline),
+                        Icon(
+                          Symbols.location_on,
+                          size: 14,
+                          color: theme.colorScheme.outline,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           currentUser.location,
-                          style: TextStyle(color: theme.colorScheme.outline, fontSize: 13),
+                          style: TextStyle(
+                            color: theme.colorScheme.outline,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -264,93 +260,98 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          _showEditProfileSheet(context, ref, currentUser),
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: const Text("Edit Profile Information"),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        minimumSize: const Size.fromHeight(38),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Explicitly Labelled Developer Account Switcher (For evaluation)
-            if (auth.isDevMode)
+            if (currentUser.isAdmin) ...[
               Card(
-                elevation: 0,
-                color: Colors.amber.withAlpha(20),
+                elevation: 2,
+                color: const Color(0xFF0F172A),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.amber.withAlpha(70)),
+                  side: const BorderSide(color: Color(0xFF00E5FF), width: 1.5),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.developer_mode, size: 22, color: Colors.orange),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "[Dev Mode] Active Account:",
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              currentUser.name,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.arrow_drop_down_circle_outlined),
-                        tooltip: "Switch Demo Test Account",
-                        onSelected: (userId) {
-                          auth.switchDemoUser(userId);
-                        },
-                        itemBuilder: (context) {
-                          return auth.demoUsers.map((user) {
-                            return PopupMenuItem(
-                              value: user.id,
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 12,
-                                    child: Text(user.name[0], style: const TextStyle(fontSize: 10)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(user.name),
-                                ],
-                              ),
-                            );
-                          }).toList();
-                        },
-                      ),
-                    ],
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withAlpha(40),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.admin_panel_settings,
+                      color: Color(0xFF00E5FF),
+                    ),
+                  ),
+                  title: const Text(
+                    "Admin Command Center",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    "Marketplace moderation, dispute override & live cloud ping",
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Color(0xFF00E5FF),
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed(AdminDashboardScreen.path),
                 ),
               ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
 
             // Shortcuts Menu
             Card(
               elevation: 0.5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(50)),
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withAlpha(50),
+                ),
               ),
               child: Column(
                 children: [
                   ListTile(
                     leading: const Icon(Symbols.history),
                     title: const Text("Completed History Archive"),
-                    subtitle: const Text("View past returned and completed transactions"),
+                    subtitle: const Text(
+                      "View past returned and completed transactions",
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const HistoryScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const HistoryScreen(),
+                        ),
                       );
                     },
                   ),
@@ -360,28 +361,31 @@ class ProfileScreen extends ConsumerWidget {
                     title: const Text("Saved Favorites"),
                     subtitle: Text("$favoriteCount items saved"),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("$favoriteCount favorite items in your list.")),
-                      );
-                    },
+                    onTap: () => _showFavoritesSheet(context, marketplace),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Symbols.backup),
                     title: const Text("Database Backup & Data Privacy"),
-                    subtitle: const Text("Export/Import local SQLite backups natively"),
+                    subtitle: const Text(
+                      "Export/Import local SQLite backups natively",
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
                       );
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Symbols.logout, color: Colors.red),
-                    title: const Text("Sign Out", style: TextStyle(color: Colors.red)),
+                    title: const Text(
+                      "Sign Out",
+                      style: TextStyle(color: Colors.red),
+                    ),
                     subtitle: const Text("Exit active user session"),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
@@ -398,7 +402,9 @@ class ProfileScreen extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Peer Reviews (${reviews.length})",
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -430,15 +436,29 @@ class ProfileScreen extends ConsumerWidget {
                           children: [
                             CircleAvatar(
                               radius: 12,
-                              child: Text(rev.reviewerName.isNotEmpty ? rev.reviewerName[0] : "R", style: const TextStyle(fontSize: 10)),
+                              child: Text(
+                                rev.reviewerName.isNotEmpty
+                                    ? rev.reviewerName[0]
+                                    : "R",
+                                style: const TextStyle(fontSize: 10),
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            Text(rev.reviewerName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              rev.reviewerName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const Spacer(),
                             Row(
                               children: List.generate(
                                 rev.rating.toInt(),
-                                (_) => const Icon(Icons.star, size: 14, color: Colors.amber),
+                                (_) => const Icon(
+                                  Icons.star,
+                                  size: 14,
+                                  color: Colors.amber,
+                                ),
                               ),
                             ),
                           ],
@@ -448,7 +468,10 @@ class ProfileScreen extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Text(
                           "Item: ${rev.itemTitle}",
-                          style: TextStyle(fontSize: 11, color: theme.colorScheme.outline),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.colorScheme.outline,
+                          ),
                         ),
                       ],
                     ),
@@ -463,7 +486,12 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCol(BuildContext context, String value, String label, Color color) {
+  Widget _buildStatCol(
+    BuildContext context,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Column(
       children: [
         Text(
@@ -483,6 +511,238 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showEditProfileSheet(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile user,
+  ) {
+    final nameController = TextEditingController(text: user.name);
+    final bioController = TextEditingController(text: user.bio);
+    final locationController = TextEditingController(text: user.location);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Edit Profile",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: "Full Name *",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: locationController,
+                decoration: InputDecoration(
+                  labelText: "General Area / Neighborhood",
+                  hintText: "e.g., Koramangala, Indiranagar",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: bioController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: "About You / Bio",
+                  hintText:
+                      "e.g., DIY maker, happy to share gear with neighbors.",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () async {
+                  final newName = nameController.text.trim();
+                  if (newName.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Name cannot be empty.")),
+                    );
+                    return;
+                  }
+                  await ref
+                      .read(authServiceProvider)
+                      .updateProfile(
+                        name: newName,
+                        bio: bioController.text.trim(),
+                        location: locationController.text.trim().isNotEmpty
+                            ? locationController.text.trim()
+                            : "Local Community",
+                      );
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Profile updated successfully!"),
+                      ),
+                    );
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                child: const Text("Save Changes"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFavoritesSheet(
+    BuildContext context,
+    MarketplaceService marketplace,
+  ) {
+    final favorites = marketplace.getFavoriteItems();
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.favorite, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Saved Favorites (${favorites.length})",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: favorites.isEmpty
+                    ? const EmptyStateView(
+                        icon: Symbols.favorite_border,
+                        title: "No Saved Favorites",
+                        message:
+                            "Tap the heart icon on any marketplace item to save it here for quick access.",
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        itemCount: favorites.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final item = favorites[index];
+                          return ListTile(
+                            tileColor: theme.colorScheme.surfaceContainerHighest
+                                .withAlpha(40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer
+                                    .withAlpha(80),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Symbols.category,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            title: Text(
+                              item.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              "${item.categoryDisplay} • ${item.pickupLocation}",
+                            ),
+                            trailing: StatusBadge.availability(
+                              item.availability,
+                            ),
+                            onTap: () {
+                              Navigator.of(ctx).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ItemDetailsScreen(item: item),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

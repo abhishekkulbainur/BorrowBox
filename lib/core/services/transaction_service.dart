@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Flutter Imports
 import 'package:flutter/material.dart';
 
@@ -10,6 +12,7 @@ import 'package:lendnborrow/core/models/app_notification.dart';
 import 'package:lendnborrow/core/models/borrow_request.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/models/review.dart';
+import 'package:lendnborrow/core/services/firebase_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/notification_service.dart';
 
@@ -22,6 +25,31 @@ class TransactionService extends ChangeNotifier {
 
   final List<BorrowRequest> _transactions = [];
   final List<Review> _reviews = [];
+  StreamSubscription<List<BorrowRequest>>? _txSubscription;
+
+  void initSync(String userId) {
+    if (!FirebaseService().isInitialized || userId.isEmpty) return;
+    _txSubscription?.cancel();
+    _txSubscription = FirebaseService()
+        .streamBorrowRequests(userId)
+        .listen(
+          (firestoreTxs) {
+            if (firestoreTxs.isNotEmpty) {
+              _transactions.clear();
+              _transactions.addAll(firestoreTxs);
+              notifyListeners();
+            }
+          },
+          onError: (e) {
+            debugPrint("Transaction sync error: $e");
+          },
+        );
+  }
+
+  void disposeSync() {
+    _txSubscription?.cancel();
+    _txSubscription = null;
+  }
 
   List<BorrowRequest> get allTransactions => List.unmodifiable(_transactions);
   List<Review> get allReviews => List.unmodifiable(_reviews);
@@ -111,22 +139,26 @@ class TransactionService extends ChangeNotifier {
   List<BorrowRequest> getActiveBorrows(String userId) {
     if (userId.isEmpty) return [];
     return _transactions
-        .where((t) =>
-            t.borrowerId == userId &&
-            (t.status == RequestStatus.active ||
-                t.status == RequestStatus.handoverPending ||
-                t.status == RequestStatus.returnPending))
+        .where(
+          (t) =>
+              t.borrowerId == userId &&
+              (t.status == RequestStatus.active ||
+                  t.status == RequestStatus.handoverPending ||
+                  t.status == RequestStatus.returnPending),
+        )
         .toList();
   }
 
   List<BorrowRequest> getActiveLoans(String userId) {
     if (userId.isEmpty) return [];
     return _transactions
-        .where((t) =>
-            t.ownerId == userId &&
-            (t.status == RequestStatus.active ||
-                t.status == RequestStatus.handoverPending ||
-                t.status == RequestStatus.returnPending))
+        .where(
+          (t) =>
+              t.ownerId == userId &&
+              (t.status == RequestStatus.active ||
+                  t.status == RequestStatus.handoverPending ||
+                  t.status == RequestStatus.returnPending),
+        )
         .toList();
   }
 
@@ -140,18 +172,23 @@ class TransactionService extends ChangeNotifier {
   List<BorrowRequest> getOutgoingPendingRequests(String borrowerId) {
     if (borrowerId.isEmpty) return [];
     return _transactions
-        .where((t) => t.borrowerId == borrowerId && t.status == RequestStatus.pending)
+        .where(
+          (t) =>
+              t.borrowerId == borrowerId && t.status == RequestStatus.pending,
+        )
         .toList();
   }
 
   List<BorrowRequest> getHistory(String userId) {
     if (userId.isEmpty) return [];
     return _transactions
-        .where((t) =>
-            (t.borrowerId == userId || t.ownerId == userId) &&
-            (t.status == RequestStatus.returned ||
-                t.status == RequestStatus.cancelled ||
-                t.status == RequestStatus.rejected))
+        .where(
+          (t) =>
+              (t.borrowerId == userId || t.ownerId == userId) &&
+              (t.status == RequestStatus.returned ||
+                  t.status == RequestStatus.cancelled ||
+                  t.status == RequestStatus.rejected),
+        )
         .toList();
   }
 
@@ -178,11 +215,22 @@ class TransactionService extends ChangeNotifier {
   }) async {
     // SECURITY: Users cannot borrow their own listed items
     if (borrowerId == item.ownerId) {
-      throw ArgumentError("Unauthorized: You cannot borrow an item that you already own.");
+      throw ArgumentError(
+        "Unauthorized: You cannot borrow an item that you already own.",
+      );
     }
 
     if (endDate.isBefore(startDate)) {
-      throw ArgumentError("Invalid date range: End date cannot precede start date.");
+      throw ArgumentError(
+        "Invalid date range: End date cannot precede start date.",
+      );
+    }
+
+    // Task 10: Concurrency guard - prevent borrowing an already reserved/borrowed item
+    if (item.availability != ItemAvailability.available) {
+      throw ArgumentError(
+        "Item is currently not available for borrowing (${item.availability.name}).",
+      );
     }
 
     final newRequest = BorrowRequest(
@@ -203,7 +251,7 @@ class TransactionService extends ChangeNotifier {
 
     _transactions.insert(0, newRequest);
 
-    // Notify item owner
+    // Notify item owner locally
     NotificationService().addNotification(
       AppNotification(
         id: const Uuid().v4(),
@@ -217,6 +265,22 @@ class TransactionService extends ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      try {
+        final docId = await FirebaseService().createBorrowRequest(newRequest);
+        if (docId != null && docId.isNotEmpty) {
+          final index = _transactions.indexWhere((t) => t.id == newRequest.id);
+          if (index != -1) {
+            _transactions[index] = _transactions[index].copyWith(id: docId);
+            notifyListeners();
+          }
+        }
+      } catch (e) {
+        debugPrint("Error creating borrow request in Firebase: $e");
+      }
+    }
+
     return newRequest;
   }
 
@@ -238,14 +302,18 @@ class TransactionService extends ChangeNotifier {
     // Must be in pending state
     if (tx.status != RequestStatus.pending) return false;
 
-    final token = "BB-HANDOVER-${const Uuid().v4().substring(0, 8).toUpperCase()}";
+    final token =
+        "BB-HANDOVER-${const Uuid().v4().substring(0, 8).toUpperCase()}";
     _transactions[index] = tx.copyWith(
       status: RequestStatus.handoverPending,
       handoverQrToken: token,
     );
 
     // Reserve item in marketplace
-    MarketplaceService().updateAvailability(tx.listingId, ItemAvailability.reserved);
+    MarketplaceService().updateAvailability(
+      tx.listingId,
+      ItemAvailability.reserved,
+    );
 
     // Notify borrower
     NotificationService().addNotification(
@@ -253,7 +321,8 @@ class TransactionService extends ChangeNotifier {
         id: const Uuid().v4(),
         userId: tx.borrowerId,
         title: "Borrow Request Approved!",
-        message: "Your request for '${tx.itemTitle}' was approved by ${tx.ownerName}. QR handover code is ready.",
+        message:
+            "Your request for '${tx.itemTitle}' was approved by ${tx.ownerName}. QR handover code is ready.",
         type: NotificationType.requestApproved,
         createdAt: DateTime.now(),
         referenceId: tx.id,
@@ -261,6 +330,16 @@ class TransactionService extends ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().approveRequest(requestId, token).catchError((e) {
+        debugPrint("Error approving request in Firebase: $e");
+        // Rollback optimistic state if failed
+        _transactions[index] = tx;
+        notifyListeners();
+      });
+    }
+
     return true;
   }
 
@@ -289,7 +368,8 @@ class TransactionService extends ChangeNotifier {
         id: const Uuid().v4(),
         userId: tx.borrowerId,
         title: "Borrow Request Declined",
-        message: "Your request for '${tx.itemTitle}' was declined by the owner.",
+        message:
+            "Your request for '${tx.itemTitle}' was declined by the owner.",
         type: NotificationType.requestRejected,
         createdAt: DateTime.now(),
         referenceId: tx.id,
@@ -297,11 +377,24 @@ class TransactionService extends ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().rejectRequest(requestId, reason: reason).catchError((
+        e,
+      ) {
+        debugPrint("Error rejecting request in Firebase: $e");
+      });
+    }
+
     return true;
   }
 
   // 4. Confirm Handover (transitions to active & burns the single-use token)
-  bool confirmHandover(String requestId, String scannedToken, {String? scannerUserId}) {
+  bool confirmHandover(
+    String requestId,
+    String scannedToken, {
+    String? scannerUserId,
+  }) {
     final index = _transactions.indexWhere((t) => t.id == requestId);
     if (index == -1) return false;
 
@@ -328,9 +421,26 @@ class TransactionService extends ChangeNotifier {
       clearHandoverToken: true,
     );
 
-    MarketplaceService().updateAvailability(tx.listingId, ItemAvailability.borrowed);
+    MarketplaceService().updateAvailability(
+      tx.listingId,
+      ItemAvailability.borrowed,
+    );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService()
+          .confirmHandover(
+            requestId,
+            scannedToken,
+            scannerUserId ?? tx.borrowerId,
+          )
+          .catchError((e) {
+            debugPrint("Error confirming handover in Firebase: $e");
+            return false;
+          });
+    }
+
     return true;
   }
 
@@ -349,7 +459,8 @@ class TransactionService extends ChangeNotifier {
       return false;
     }
 
-    final returnToken = "BB-RETURN-${const Uuid().v4().substring(0, 8).toUpperCase()}";
+    final returnToken =
+        "BB-RETURN-${const Uuid().v4().substring(0, 8).toUpperCase()}";
     _transactions[index] = tx.copyWith(
       status: RequestStatus.returnPending,
       returnQrToken: returnToken,
@@ -361,7 +472,8 @@ class TransactionService extends ChangeNotifier {
         id: const Uuid().v4(),
         userId: tx.ownerId,
         title: "Item Ready for Return",
-        message: "${tx.borrowerName} has marked '${tx.itemTitle}' ready for return inspection.",
+        message:
+            "${tx.borrowerName} has marked '${tx.itemTitle}' ready for return inspection.",
         type: NotificationType.returnReminder,
         createdAt: DateTime.now(),
         referenceId: tx.id,
@@ -369,11 +481,22 @@ class TransactionService extends ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().initiateReturn(requestId, returnToken).catchError((e) {
+        debugPrint("Error initiating return in Firebase: $e");
+      });
+    }
+
     return true;
   }
 
   // 6. Confirm Return (transitions to returned & burns return token)
-  bool confirmReturn(String requestId, String scannedToken, {String? scannerUserId}) {
+  bool confirmReturn(
+    String requestId,
+    String scannedToken, {
+    String? scannerUserId,
+  }) {
     final index = _transactions.indexWhere((t) => t.id == requestId);
     if (index == -1) return false;
 
@@ -398,7 +521,10 @@ class TransactionService extends ChangeNotifier {
       clearReturnToken: true,
     );
 
-    MarketplaceService().updateAvailability(tx.listingId, ItemAvailability.available);
+    MarketplaceService().updateAvailability(
+      tx.listingId,
+      ItemAvailability.available,
+    );
 
     // Notify borrower to review
     NotificationService().addNotification(
@@ -406,7 +532,8 @@ class TransactionService extends ChangeNotifier {
         id: const Uuid().v4(),
         userId: tx.borrowerId,
         title: "Return Confirmed!",
-        message: "${tx.ownerName} confirmed the safe return of '${tx.itemTitle}'. Please rate your experience!",
+        message:
+            "${tx.ownerName} confirmed the safe return of '${tx.itemTitle}'. Please rate your experience!",
         type: NotificationType.itemReturned,
         createdAt: DateTime.now(),
         referenceId: tx.id,
@@ -414,6 +541,16 @@ class TransactionService extends ChangeNotifier {
     );
 
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService()
+          .confirmReturn(requestId, scannedToken, scannerUserId ?? tx.ownerId)
+          .catchError((e) {
+            debugPrint("Error confirming return in Firebase: $e");
+            return false;
+          });
+    }
+
     return true;
   }
 
@@ -437,7 +574,9 @@ class TransactionService extends ChangeNotifier {
 
     // SECURITY: Prevent duplicate reviews for the same transaction by same reviewer
     final duplicate = _reviews.any(
-      (r) => r.transactionId == review.transactionId && r.reviewerId == review.reviewerId,
+      (r) =>
+          r.transactionId == review.transactionId &&
+          r.reviewerId == review.reviewerId,
     );
     if (duplicate) {
       return false;
@@ -453,6 +592,8 @@ class TransactionService extends ChangeNotifier {
   }
 }
 
-final transactionServiceProvider = ChangeNotifierProvider<TransactionService>((ref) {
+final transactionServiceProvider = ChangeNotifierProvider<TransactionService>((
+  ref,
+) {
   return TransactionService();
 });

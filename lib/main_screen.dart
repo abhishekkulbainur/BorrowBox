@@ -135,10 +135,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               ref.read(currentTabIndexProvider.notifier).state = index;
             },
             items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Symbols.home),
-                label: "Home",
-              ),
+              BottomNavigationBarItem(icon: Icon(Symbols.home), label: "Home"),
               BottomNavigationBarItem(
                 icon: Icon(Symbols.search),
                 label: "Explore",

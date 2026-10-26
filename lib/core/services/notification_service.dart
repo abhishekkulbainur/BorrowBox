@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Flutter Imports
 import 'package:flutter/material.dart';
 
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/legacy.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/app_notification.dart';
+import 'package:lendnborrow/core/services/firebase_service.dart';
 
 class NotificationService extends ChangeNotifier {
   static final NotificationService _instance = NotificationService._internal();
@@ -15,17 +18,47 @@ class NotificationService extends ChangeNotifier {
   }
 
   final List<AppNotification> _notifications = [];
+  StreamSubscription<List<AppNotification>>? _notifSubscription;
 
-  List<AppNotification> get allNotifications => List.unmodifiable(_notifications);
+  void initSync(String userId) {
+    if (!FirebaseService().isInitialized || userId.isEmpty) return;
+    _notifSubscription?.cancel();
+    _notifSubscription = FirebaseService()
+        .streamNotifications(userId)
+        .listen(
+          (firestoreNotifs) {
+            if (firestoreNotifs.isNotEmpty) {
+              _notifications.clear();
+              _notifications.addAll(firestoreNotifs);
+              notifyListeners();
+            }
+          },
+          onError: (e) {
+            debugPrint("Notifications sync error: $e");
+          },
+        );
+  }
+
+  void disposeSync() {
+    _notifSubscription?.cancel();
+    _notifSubscription = null;
+  }
+
+  List<AppNotification> get allNotifications =>
+      List.unmodifiable(_notifications);
 
   List<AppNotification> getNotificationsForUser(String userId) {
     if (userId.isEmpty) return [];
-    return _notifications.where((n) => n.userId == userId || n.userId.isEmpty).toList();
+    return _notifications
+        .where((n) => n.userId == userId || n.userId.isEmpty)
+        .toList();
   }
 
   int getUnreadCountForUser(String userId) {
     if (userId.isEmpty) return 0;
-    return _notifications.where((n) => (n.userId == userId || n.userId.isEmpty) && !n.isRead).length;
+    return _notifications
+        .where((n) => (n.userId == userId || n.userId.isEmpty) && !n.isRead)
+        .length;
   }
 
   void _initSeedNotifications() {
@@ -34,7 +67,8 @@ class NotificationService extends ChangeNotifier {
         id: "notif_01",
         userId: "user_abhishek",
         title: "New Borrow Request Received",
-        message: "Snehal Mascarenhas requested to borrow your 'Bosch 18V Cordless Drill'.",
+        message:
+            "Snehal Mascarenhas requested to borrow your 'Bosch 18V Cordless Drill'.",
         type: NotificationType.borrowRequest,
         createdAt: DateTime.now().subtract(const Duration(hours: 3)),
         isRead: false,
@@ -44,7 +78,8 @@ class NotificationService extends ChangeNotifier {
         id: "notif_02",
         userId: "user_abhishek",
         title: "Loan Approved & Ready for Handover",
-        message: "Your request for 'Casio fx-991EX Calculator' was approved. Show your QR token at pickup.",
+        message:
+            "Your request for 'Casio fx-991EX Calculator' was approved. Show your QR token at pickup.",
         type: NotificationType.handoverReady,
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         isRead: true,
@@ -54,7 +89,8 @@ class NotificationService extends ChangeNotifier {
         id: "notif_03",
         userId: "user_snehal",
         title: "Return Confirmed & Reviewed",
-        message: "Abhishek confirmed the safe return of 'Quechua 3-Person Camping Tent' and left a 5-star review!",
+        message:
+            "Abhishek confirmed the safe return of 'Quechua 3-Person Camping Tent' and left a 5-star review!",
         type: NotificationType.itemReturned,
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         isRead: true,
@@ -68,18 +104,28 @@ class NotificationService extends ChangeNotifier {
     if (index != -1 && !_notifications[index].isRead) {
       _notifications[index] = _notifications[index].copyWith(isRead: true);
       notifyListeners();
+      if (FirebaseService().isInitialized) {
+        FirebaseService().markNotificationAsRead(id);
+      }
     }
   }
 
   void markAllAsReadForUser(String userId) {
     bool changed = false;
     for (int i = 0; i < _notifications.length; i++) {
-      if ((_notifications[i].userId == userId || _notifications[i].userId.isEmpty) && !_notifications[i].isRead) {
+      if ((_notifications[i].userId == userId ||
+              _notifications[i].userId.isEmpty) &&
+          !_notifications[i].isRead) {
         _notifications[i] = _notifications[i].copyWith(isRead: true);
         changed = true;
       }
     }
-    if (changed) notifyListeners();
+    if (changed) {
+      notifyListeners();
+      if (FirebaseService().isInitialized) {
+        FirebaseService().markAllNotificationsAsRead(userId);
+      }
+    }
   }
 
   void addNotification(AppNotification notif) {
@@ -88,6 +134,8 @@ class NotificationService extends ChangeNotifier {
   }
 }
 
-final notificationServiceProvider = ChangeNotifierProvider<NotificationService>((ref) {
-  return NotificationService();
-});
+final notificationServiceProvider = ChangeNotifierProvider<NotificationService>(
+  (ref) {
+    return NotificationService();
+  },
+);

@@ -12,6 +12,7 @@ import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/empty_state_view.dart';
 import 'package:lendnborrow/core/widgets/qr_handover_modal.dart';
 import 'package:lendnborrow/core/widgets/status_badge.dart';
@@ -66,11 +67,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Symbols.swap_horiz, size: 64, color: theme.colorScheme.primary),
+                const AppLogo(size: 90, borderRadius: 16),
                 const SizedBox(height: 16),
                 Text(
                   "Sign In to Track Activity",
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -80,7 +83,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pushNamed(AuthScreen.path),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AuthScreen.path),
                   icon: const Icon(Icons.login),
                   label: const Text("Sign In or Register"),
                 ),
@@ -88,7 +92,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const BorrowedScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const BorrowedScreen(),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.lock_clock),
@@ -109,31 +115,52 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "My Sharing Activity",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppLogo.icon(size: 26, borderRadius: 6),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                "My Sharing Activity",
+                style: TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             Tab(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Symbols.download, size: 18),
-                  const SizedBox(width: 6),
+                  const Icon(Symbols.download, size: 16),
+                  const SizedBox(width: 5),
                   const Text("Borrowed"),
-                  if (myBorrows.where((b) => b.status == RequestStatus.active).isNotEmpty)
+                  if (myBorrows
+                      .where((b) => b.status == RequestStatus.active)
+                      .isNotEmpty)
                     Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      margin: const EdgeInsets.only(left: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         "${myBorrows.where((b) => b.status == RequestStatus.active).length}",
-                        style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 10),
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                 ],
@@ -141,22 +168,29 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             ),
             Tab(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Symbols.upload, size: 18),
-                  const SizedBox(width: 6),
+                  const Icon(Symbols.upload, size: 16),
+                  const SizedBox(width: 5),
                   const Text("Lent & Requests"),
                   if (incomingRequests.isNotEmpty)
                     Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      margin: const EdgeInsets.only(left: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange[800],
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         "${incomingRequests.length}",
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                 ],
@@ -164,11 +198,31 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             ),
             Tab(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Symbols.inventory_2, size: 18),
-                  const SizedBox(width: 6),
-                  Text("My Listings (${myListings.length})"),
+                  const Icon(Symbols.inventory_2, size: 16),
+                  const SizedBox(width: 5),
+                  const Text("My Listings"),
+                  if (myListings.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(left: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        "${myListings.length}",
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -189,37 +243,34 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   // Borrowed items view
   Widget _buildBorrowedTab(BuildContext context, List<BorrowRequest> items) {
     if (items.isEmpty) {
-      return Column(
+      return ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Expanded(
-            child: EmptyStateView(
-              icon: Symbols.download,
-              title: "No Borrowed Items Yet",
-              message: "Discover items in your community and submit a borrow request.",
-              actionLabel: "Explore Items",
-              onAction: () {},
-            ),
+          EmptyStateView(
+            icon: Symbols.download,
+            title: "No Borrowed Items Yet",
+            message:
+                "Discover items in your community and submit a borrow request.",
+            actionLabel: "Explore Items",
+            onAction: () {},
           ),
+          const SizedBox(height: 16),
           _buildOfflineLedgerBanner(context, isLent: false),
         ],
       );
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final req = items[index];
-              return _buildBorrowCard(context, req);
-            },
-          ),
-        ),
-        _buildOfflineLedgerBanner(context, isLent: false),
-      ],
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length + 1,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        if (index == items.length) {
+          return _buildOfflineLedgerBanner(context, isLent: false);
+        }
+        final req = items[index];
+        return _buildBorrowCard(context, req);
+      },
     );
   }
 
@@ -263,50 +314,73 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             const SizedBox(height: 4),
             Text(
               "Duration: ${DateFormat.yMd().format(req.startDate)} - ${DateFormat.yMd().format(req.endDate)}",
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.colorScheme.outline,
-              ),
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
             ),
             const Divider(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (req.status == RequestStatus.handoverPending)
-                  FilledButton.icon(
-                    onPressed: () {
-                      _showQrModal(context, req, false);
-                    },
-                    icon: const Icon(Icons.qr_code, size: 16),
-                    label: const Text("Show Handover QR"),
-                  )
-                else if (req.status == RequestStatus.active)
-                  FilledButton.tonalIcon(
-                    onPressed: () {
-                      final ok = txService.initiateReturn(req.id, actorId: currentUserId);
-                      if (ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Return initiated! Show return QR to owner.")),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.assignment_return, size: 16),
-                    label: const Text("Initiate Return"),
-                  )
-                else if (req.status == RequestStatus.returnPending)
-                  FilledButton.icon(
-                    onPressed: () {
-                      _showQrModal(context, req, true);
-                    },
-                    icon: const Icon(Icons.qr_code_scanner, size: 16),
-                    label: const Text("Show Return QR"),
-                  )
-                else
-                  Text(
-                    req.statusDisplay,
-                    style: TextStyle(color: theme.colorScheme.outline, fontSize: 12),
-                  ),
-              ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (req.status == RequestStatus.handoverPending)
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          _showQrModal(context, req, false);
+                        },
+                        icon: const Icon(Icons.qr_code, size: 16),
+                        label: const Text("Show Handover QR"),
+                      )
+                    else if (req.status == RequestStatus.active)
+                      FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          final ok = txService.initiateReturn(
+                            req.id,
+                            actorId: currentUserId,
+                          );
+                          if (ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Return initiated! Show return QR to owner.",
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.assignment_return, size: 16),
+                        label: const Text("Initiate Return"),
+                      )
+                    else if (req.status == RequestStatus.returnPending)
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          _showQrModal(context, req, true);
+                        },
+                        icon: const Icon(Icons.qr_code_scanner, size: 16),
+                        label: const Text("Show Return QR"),
+                      )
+                    else
+                      Text(
+                        req.statusDisplay,
+                        style: TextStyle(
+                          color: theme.colorScheme.outline,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -324,56 +398,62 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     final txService = ref.read(transactionServiceProvider);
 
     if (pending.isEmpty && loans.isEmpty) {
-      return Column(
+      return ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Expanded(
-            child: EmptyStateView(
-              icon: Symbols.upload,
-              title: "No Active Loans or Requests",
-              message: "When peers request to borrow your listings, they will appear here.",
-            ),
+          const EmptyStateView(
+            icon: Symbols.upload,
+            title: "No Active Loans or Requests",
+            message:
+                "When peers request to borrow your listings, they will appear here.",
           ),
+          const SizedBox(height: 16),
           _buildOfflineLedgerBanner(context, isLent: true),
         ],
       );
     }
 
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+        if (pending.isNotEmpty) ...[
+          Row(
             children: [
-              if (pending.isNotEmpty) ...[
-                Row(
-                  children: [
-                    const Icon(Icons.mark_email_unread_outlined, size: 18, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Incoming Requests (${pending.length})",
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ...pending.map((req) => _buildIncomingRequestCard(context, req, txService)),
-                const SizedBox(height: 20),
-              ],
-              Row(
-                children: [
-                  const Icon(Icons.sync_alt, size: 18, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Active Loans (${loans.length})",
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ],
+              const Icon(
+                Icons.mark_email_unread_outlined,
+                size: 18,
+                color: Colors.orange,
               ),
-              const SizedBox(height: 10),
-              ...loans.map((req) => _buildLentCard(context, req, txService)),
+              const SizedBox(width: 8),
+              Text(
+                "Incoming Requests (${pending.length})",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 10),
+          ...pending.map(
+            (req) => _buildIncomingRequestCard(context, req, txService),
+          ),
+          const SizedBox(height: 20),
+        ],
+        Row(
+          children: [
+            const Icon(Icons.sync_alt, size: 18, color: Colors.green),
+            const SizedBox(width: 8),
+            Text(
+              "Active Loans (${loans.length})",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+        ...loans.map((req) => _buildLentCard(context, req, txService)),
+        const SizedBox(height: 16),
         _buildOfflineLedgerBanner(context, isLent: true),
       ],
     );
@@ -404,7 +484,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 Expanded(
                   child: Text(
                     req.itemTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 StatusBadge.request(req.status),
@@ -426,42 +508,72 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 ),
                 child: Text(
                   "\"${req.message!}\"",
-                  style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                OutlinedButton(
-                  onPressed: () {
-                    final ok = txService.rejectRequest(req.id, actorId: currentUserId);
-                    if (ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Request declined.")),
-                      );
-                    }
-                  },
-                  child: const Text("Decline"),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        final ok = txService.rejectRequest(
+                          req.id,
+                          actorId: currentUserId,
+                        );
+                        if (ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Request declined.")),
+                          );
+                        }
+                      },
+                      child: const Text("Decline"),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        final ok = txService.approveRequest(
+                          req.id,
+                          actorId: currentUserId,
+                        );
+                        if (ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Approved request for ${req.borrowerName}!",
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Failed to approve request: unauthorized.",
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text("Approve Loan"),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () {
-                    final ok = txService.approveRequest(req.id, actorId: currentUserId);
-                    if (ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Approved request for ${req.borrowerName}!")),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Failed to approve request: unauthorized.")),
-                      );
-                    }
-                  },
-                  child: const Text("Approve Loan"),
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -493,7 +605,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 Expanded(
                   child: Text(
                     req.itemTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 StatusBadge.request(req.status),
@@ -506,44 +620,68 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
               style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
             ),
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (req.status == RequestStatus.handoverPending)
-                  FilledButton.icon(
-                    onPressed: () {
-                      _showQrModal(context, req, false);
-                    },
-                    icon: const Icon(Icons.qr_code, size: 16),
-                    label: const Text("Handover QR"),
-                  )
-                else if (req.status == RequestStatus.returnPending)
-                  FilledButton.icon(
-                    onPressed: () {
-                      final ok = txService.confirmReturn(
-                        req.id,
-                        req.returnQrToken ?? "",
-                        scannerUserId: currentUserId,
-                      );
-                      if (ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Return verified and loan completed!")),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Return verification failed: unauthorized or invalid token.")),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text("Confirm Return Received"),
-                  )
-                else
-                  Text(
-                    req.statusDisplay,
-                    style: TextStyle(color: theme.colorScheme.outline, fontSize: 12),
-                  ),
-              ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (req.status == RequestStatus.handoverPending)
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          _showQrModal(context, req, false);
+                        },
+                        icon: const Icon(Icons.qr_code, size: 16),
+                        label: const Text("Handover QR"),
+                      )
+                    else if (req.status == RequestStatus.returnPending)
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          final ok = txService.confirmReturn(
+                            req.id,
+                            req.returnQrToken ?? "",
+                            scannerUserId: currentUserId,
+                          );
+                          if (ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Return verified and loan completed!",
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Return verification failed: unauthorized or invalid token.",
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.check, size: 16),
+                        label: const Text("Confirm Return Received"),
+                      )
+                    else
+                      Text(
+                        req.statusDisplay,
+                        style: TextStyle(
+                          color: theme.colorScheme.outline,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -552,12 +690,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   }
 
   // My Listings view
-  Widget _buildListingsTab(BuildContext context, List<MarketplaceItem> listings) {
+  Widget _buildListingsTab(
+    BuildContext context,
+    List<MarketplaceItem> listings,
+  ) {
     if (listings.isEmpty) {
       return EmptyStateView(
         icon: Symbols.inventory_2,
         title: "No Published Listings",
-        message: "You haven't shared any items yet. Share an item to let peers borrow it!",
+        message:
+            "You haven't shared any items yet. Share an item to let peers borrow it!",
       );
     }
 
@@ -568,9 +710,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       itemBuilder: (context, index) {
         final item = listings[index];
         return ListTile(
-          tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(40),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          tileColor: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withAlpha(40),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Text(
+            item.title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           subtitle: Text("${item.categoryDisplay} • ${item.pickupLocation}"),
           trailing: StatusBadge.availability(item.availability),
         );
@@ -589,13 +738,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         isReturn: isReturn,
         onConfirmHandover: () {
           if (isReturn) {
-            ref.read(transactionServiceProvider).confirmReturn(
+            ref
+                .read(transactionServiceProvider)
+                .confirmReturn(
                   req.id,
                   req.returnQrToken ?? "",
                   scannerUserId: currentUserId,
                 );
           } else {
-            ref.read(transactionServiceProvider).confirmHandover(
+            ref
+                .read(transactionServiceProvider)
+                .confirmHandover(
                   req.id,
                   req.handoverQrToken ?? "",
                   scannerUserId: currentUserId,
@@ -607,34 +760,54 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   }
 
   // Preserving access to the existing offline personal tracking ledger
-  Widget _buildOfflineLedgerBanner(BuildContext context, {required bool isLent}) {
+  Widget _buildOfflineLedgerBanner(
+    BuildContext context, {
+    required bool isLent,
+  }) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 8),
       color: theme.colorScheme.surfaceContainerHighest.withAlpha(70),
-      child: Row(
-        children: [
-          Icon(Icons.lock_clock, size: 18, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isLent
-                  ? "Looking for your private offline lending records?"
-                  : "Looking for your private offline borrowing records?",
-              style: const TextStyle(fontSize: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(50)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.lock_clock, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isLent
+                    ? "Looking for your private offline lending records?"
+                    : "Looking for your private offline borrowing records?",
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => isLent ? const LentScreen() : const BorrowedScreen(),
+            const SizedBox(width: 8),
+            FilledButton.tonal(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        isLent ? const LentScreen() : const BorrowedScreen(),
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
                 ),
-              );
-            },
-            child: const Text("Open Local Ledger"),
-          ),
-        ],
+              ),
+              child: const Text("Open Ledger", style: TextStyle(fontSize: 11)),
+            ),
+          ],
+        ),
       ),
     );
   }

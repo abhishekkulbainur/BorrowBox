@@ -1,10 +1,12 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 val keystoreProps = Properties().apply {
@@ -22,10 +24,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
     defaultConfig {
         applicationId = "de.oppahansi.lendnborrow"
         // You can update the following values to match your application needs.
@@ -37,29 +35,36 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            val storeFilePath = keystoreProps.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE")
-            val storePwd = keystoreProps.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            val alias = keystoreProps.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
-            val keyPwd = keystoreProps.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+        val storeFilePath = keystoreProps.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE")
+        if (!storeFilePath.isNullOrBlank()) {
+            create("release") {
+                val storePwd = keystoreProps.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+                val alias = keystoreProps.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS") ?: ""
+                val keyPwd = keystoreProps.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD") ?: ""
 
-            require(!storeFilePath.isNullOrBlank()) { "Missing keystore path" }
-            require(!storePwd.isNullOrBlank()) { "Missing store password" }
-            require(!alias.isNullOrBlank()) { "Missing key alias" }
-            require(!keyPwd.isNullOrBlank()) { "Missing key password" }
-
-            storeFile = file(storeFilePath)
-            storePassword = storePwd
-            keyAlias = alias
-            keyPassword = keyPwd
+                storeFile = file(storeFilePath)
+                storePassword = storePwd
+                keyAlias = alias
+                keyPassword = keyPwd
+            }
         }
     }
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs["release"]
-            isMinifyEnabled = true // Optional: disable minification, adjust as needed
+            val releaseSigning = signingConfigs.findByName("release")
+            if (releaseSigning != null) {
+                signingConfig = releaseSigning
+            }
+            isMinifyEnabled = false // Optional: disable minification, adjust as needed
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 

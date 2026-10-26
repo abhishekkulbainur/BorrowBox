@@ -1,10 +1,4 @@
-enum CommunityType {
-  apartment,
-  neighborhood,
-  college,
-  hobby,
-  general,
-}
+enum CommunityType { apartment, neighborhood, college, hobby, general }
 
 class Community {
   final String id;
@@ -31,10 +25,7 @@ class Community {
     this.isJoined = false,
   });
 
-  Community copyWith({
-    bool? isJoined,
-    int? memberCount,
-  }) {
+  Community copyWith({bool? isJoined, int? memberCount}) {
     return Community(
       id: id,
       name: name,

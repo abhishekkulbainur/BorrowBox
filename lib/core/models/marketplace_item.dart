@@ -12,18 +12,9 @@ enum ItemCategory {
   other,
 }
 
-enum ItemCondition {
-  likeNew,
-  excellent,
-  good,
-  fair,
-}
+enum ItemCondition { likeNew, excellent, good, fair }
 
-enum ItemAvailability {
-  available,
-  reserved,
-  borrowed,
-}
+enum ItemAvailability { available, reserved, borrowed }
 
 class MarketplaceItem {
   final String id;
@@ -71,6 +62,7 @@ class MarketplaceItem {
   });
 
   MarketplaceItem copyWith({
+    String? id,
     String? title,
     String? description,
     ItemCategory? category,
@@ -87,7 +79,7 @@ class MarketplaceItem {
     bool? isFavorite,
   }) {
     return MarketplaceItem(
-      id: id,
+      id: id ?? this.id,
       ownerId: ownerId,
       ownerName: ownerName,
       ownerAvatarUrl: ownerAvatarUrl,

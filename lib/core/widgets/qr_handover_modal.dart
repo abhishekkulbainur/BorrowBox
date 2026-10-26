@@ -103,7 +103,11 @@ class QrHandoverModal extends StatelessWidget {
               Navigator.of(context).pop();
             },
             icon: const Icon(Icons.check_circle_outline),
-            label: Text(isReturn ? "Confirm Return Verified" : "Confirm Handover Completed"),
+            label: Text(
+              isReturn
+                  ? "Confirm Return Verified"
+                  : "Confirm Handover Completed",
+            ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
             ),

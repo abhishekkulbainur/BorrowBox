@@ -52,7 +52,11 @@ The application is intended to function fully offline, without relying on cloud 
 | Flutter | Mobile application framework |
 | Dart | Primary programming language |
 | Flutter Riverpod | State management |
-| SQLite / sqflite | Local database and persistent records |
+| Google Firebase | Cloud backend & real-time synchronization |
+| Firebase Authentication | Secure user sign-up and authentication |
+| Cloud Firestore | NoSQL cloud database for items, requests, & events |
+| Firebase Storage | Image and media asset storage |
+| SQLite / sqflite | Local database and persistent offline cache |
 | Kotlin | Native Android integration |
 | Flutter MethodChannel | Communication between Flutter and native Android code |
 | Android Storage Access Framework (SAF) | Database backup and restore |

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "432506983215",
+    "project_id": "borrowbox-app-78b81",
+    "storage_bucket": "borrowbox-app-78b81.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:432506983215:android:6bae4e268c33a6d3c547da",
+        "android_client_info": {
+          "package_name": "de.oppahansi.lendnborrow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQLDgqGaHbP8uIpouCf0j9utW63mmvXJQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

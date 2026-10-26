@@ -53,9 +53,7 @@ class ItemCard extends StatelessWidget {
       elevation: 0.5,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -90,8 +88,12 @@ class ItemCard extends StatelessWidget {
                       right: 4,
                       child: IconButton(
                         icon: Icon(
-                          item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: item.isFavorite ? Colors.red : theme.colorScheme.onSurfaceVariant,
+                          item.isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: item.isFavorite
+                              ? Colors.red
+                              : theme.colorScheme.onSurfaceVariant,
                           size: 22,
                         ),
                         onPressed: onFavoriteToggle,
@@ -108,7 +110,10 @@ class ItemCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(4),

@@ -18,15 +18,18 @@ void main() {
       expect(items.any((i) => i.category == ItemCategory.electronics), isTrue);
     });
 
-    test('Search filtering returns matching items by title and description', () {
-      final results = service.searchAndFilter(query: 'Casio');
-      expect(results.length, greaterThanOrEqualTo(1));
-      expect(results.first.title.contains('Casio'), isTrue);
+    test(
+      'Search filtering returns matching items by title and description',
+      () {
+        final results = service.searchAndFilter(query: 'Casio');
+        expect(results.length, greaterThanOrEqualTo(1));
+        expect(results.first.title.contains('Casio'), isTrue);
 
-      final drillResults = service.searchAndFilter(query: 'Bosch');
-      expect(drillResults.length, greaterThanOrEqualTo(1));
-      expect(drillResults.first.title.contains('Bosch'), isTrue);
-    });
+        final drillResults = service.searchAndFilter(query: 'Bosch');
+        expect(drillResults.length, greaterThanOrEqualTo(1));
+        expect(drillResults.first.title.contains('Bosch'), isTrue);
+      },
+    );
 
     test('Category filtering isolates specific categories', () {
       final toolsOnly = service.searchAndFilter(category: ItemCategory.tools);
@@ -35,11 +38,21 @@ void main() {
     });
 
     test('Condition and availability filtering works accurately', () {
-      final likeNewOnly = service.searchAndFilter(condition: ItemCondition.likeNew);
-      expect(likeNewOnly.every((i) => i.condition == ItemCondition.likeNew), isTrue);
+      final likeNewOnly = service.searchAndFilter(
+        condition: ItemCondition.likeNew,
+      );
+      expect(
+        likeNewOnly.every((i) => i.condition == ItemCondition.likeNew),
+        isTrue,
+      );
 
       final availableOnly = service.searchAndFilter(onlyAvailable: true);
-      expect(availableOnly.every((i) => i.availability == ItemAvailability.available), isTrue);
+      expect(
+        availableOnly.every(
+          (i) => i.availability == ItemAvailability.available,
+        ),
+        isTrue,
+      );
     });
 
     test('Toggle favorite updates favorite status and counter', () {
@@ -79,12 +92,18 @@ void main() {
       expect(service.getItemById('test_item_999'), isNotNull);
 
       // Intruder cannot delete
-      final intruderDelete = service.deleteListing('test_item_999', actorId: 'user_intruder');
+      final intruderDelete = service.deleteListing(
+        'test_item_999',
+        actorId: 'user_intruder',
+      );
       expect(intruderDelete, isFalse);
       expect(service.getItemById('test_item_999'), isNotNull);
 
       // Owner deletes successfully
-      final ownerDelete = service.deleteListing('test_item_999', actorId: 'user_tester');
+      final ownerDelete = service.deleteListing(
+        'test_item_999',
+        actorId: 'user_tester',
+      );
       expect(ownerDelete, isTrue);
       expect(service.getItemById('test_item_999'), isNull);
     });

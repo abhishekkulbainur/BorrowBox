@@ -29,9 +29,7 @@ class AppNotification {
     this.referenceId,
   });
 
-  AppNotification copyWith({
-    bool? isRead,
-  }) {
+  AppNotification copyWith({bool? isRead}) {
     return AppNotification(
       id: id,
       userId: userId,

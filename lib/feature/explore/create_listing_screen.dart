@@ -15,7 +15,8 @@ class CreateListingScreen extends ConsumerStatefulWidget {
   const CreateListingScreen({super.key});
 
   @override
-  ConsumerState<CreateListingScreen> createState() => _CreateListingScreenState();
+  ConsumerState<CreateListingScreen> createState() =>
+      _CreateListingScreenState();
 }
 
 class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
@@ -68,7 +69,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pushNamed(AuthScreen.path),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AuthScreen.path),
                   icon: const Icon(Icons.login),
                   label: const Text("Sign In or Register"),
                 ),
@@ -80,9 +82,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Share an Item"),
-      ),
+      appBar: AppBar(title: const Text("Share an Item")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -92,9 +92,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
             children: [
               Text(
                 "Basic Information",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -104,10 +104,13 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 decoration: InputDecoration(
                   labelText: "Item Name & Model *",
                   hintText: "e.g., Bosch Cordless Drill, Casio fx-991EX",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? "Item name is required" : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? "Item name is required"
+                    : null,
               ),
               const SizedBox(height: 14),
 
@@ -116,16 +119,19 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   labelText: "Category *",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 items: ItemCategory.values
                     .where((c) => c != ItemCategory.all)
                     .map((cat) {
-                  return DropdownMenuItem(
-                    value: cat,
-                    child: Text(cat.name.toUpperCase()),
-                  );
-                }).toList(),
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat.name.toUpperCase()),
+                      );
+                    })
+                    .toList(),
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedCategory = val);
                 },
@@ -138,19 +144,23 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: "Description & What's Included *",
-                  hintText: "Describe accessories, bits, manuals, or chargers included...",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  hintText:
+                      "Describe accessories, bits, manuals, or chargers included...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? "Description is required" : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? "Description is required"
+                    : null,
               ),
               const SizedBox(height: 20),
 
               Text(
                 "Condition & Lending Terms",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -159,7 +169,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 initialValue: _selectedCondition,
                 decoration: InputDecoration(
                   labelText: "Item Condition *",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 items: ItemCondition.values.map((cond) {
                   return DropdownMenuItem(
@@ -179,10 +191,13 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 decoration: InputDecoration(
                   labelText: "General Pickup Location / Landmark *",
                   hintText: "e.g., Koramangala 4th Block, Campus Gate 2",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? "Location is required" : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? "Location is required"
+                    : null,
               ),
               const SizedBox(height: 14),
 
@@ -196,10 +211,14 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                       decoration: InputDecoration(
                         labelText: "Max Days *",
                         hintText: "7",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       validator: (val) =>
-                          val == null || int.tryParse(val) == null ? "Enter valid days" : null,
+                          val == null || int.tryParse(val) == null
+                          ? "Enter valid days"
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -210,7 +229,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                       decoration: InputDecoration(
                         labelText: "Deposit (₹, optional)",
                         hintText: "0",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -224,7 +245,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                 decoration: InputDecoration(
                   labelText: "Owner Terms / Care Instructions (optional)",
                   hintText: "e.g., Please return dry; keep away from water.",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
@@ -260,7 +283,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
         pickupLocation: _pickupLocationController.text.trim(),
         maxDurationDays: int.parse(_durationController.text.trim()),
         depositAmount: double.tryParse(_depositController.text.trim()),
-        terms: _termsController.text.trim().isNotEmpty ? _termsController.text.trim() : null,
+        terms: _termsController.text.trim().isNotEmpty
+            ? _termsController.text.trim()
+            : null,
         createdAt: DateTime.now(),
         imageUrls: [],
         availability: ItemAvailability.available,

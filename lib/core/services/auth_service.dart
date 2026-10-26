@@ -1,5 +1,5 @@
 // Flutter Imports
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 // Package Imports
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,120 +8,180 @@ import 'package:uuid/uuid.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/user_profile.dart';
+import 'package:lendnborrow/core/services/firebase_service.dart';
+import 'package:lendnborrow/core/services/marketplace_service.dart';
+import 'package:lendnborrow/core/services/notification_service.dart';
+import 'package:lendnborrow/core/services/transaction_service.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  static final List<UserProfile> _demoUsers = [
-    UserProfile(
-      id: "user_abhishek",
-      name: "Abhishek Kulbainur",
-      email: "abhishek@borrowbox.local",
-      avatarUrl: null,
-      bio: "Sharing tools, electronics, and technical gear. Believer in circular community reuse.",
-      location: "Bangalore, India",
-      rating: 4.9,
-      reviewCount: 14,
-      completedLoans: 22,
-      joinedDate: DateTime(2025, 2, 10),
-      isVerified: true,
-    ),
-    UserProfile(
-      id: "user_snehal",
-      name: "Snehal Mascarenhas",
-      email: "snehal@borrowbox.local",
-      avatarUrl: null,
-      bio: "Creative designer, book lover, and outdoor camper. Happy to lend and share useful gear!",
-      location: "Bangalore, India",
-      rating: 5.0,
-      reviewCount: 9,
-      completedLoans: 16,
-      joinedDate: DateTime(2025, 3, 1),
-      isVerified: true,
-    ),
-  ];
+  // In-memory test store: used exclusively in offline unit/widget test environments
+  // where Firebase is not initialized. No production accounts or hardcoded credentials.
+  final List<UserProfile> _testUsers = [];
 
-  // Default: unauthenticated in standard production flow
   UserProfile? _currentUser;
   bool _isAuthenticated = false;
-  bool _isDevMode = true; // Enables quick test switcher for evaluation
 
   UserProfile? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated && _currentUser != null;
-  bool get isDevMode => _isDevMode;
-  List<UserProfile> get demoUsers => List.unmodifiable(_demoUsers);
 
-  void setDevMode(bool enabled) {
-    _isDevMode = enabled;
+  /// Test-only utility to seed test accounts in automated test suites
+  @visibleForTesting
+  void seedTestUsers(List<UserProfile> users) {
+    _testUsers.clear();
+    _testUsers.addAll(users);
+  }
+
+  /// Test-only utility to set active test user in automated test suites
+  @visibleForTesting
+  void setTestUser(UserProfile? user) {
+    _currentUser = user;
+    _isAuthenticated = user != null;
+    if (user != null) {
+      _syncUserServices(user.id);
+    } else {
+      _clearUserServices();
+    }
     notifyListeners();
   }
 
+  /// Initialize authenticated session from persistent Firebase session on app launch
+  Future<void> initialize() async {
+    if (FirebaseService().isInitialized) {
+      final user = FirebaseService().currentFirebaseUser;
+      if (user != null) {
+        final profile = await FirebaseService().ensureUserProfile(user);
+        _currentUser = profile;
+        _isAuthenticated = true;
+        _syncUserServices(_currentUser!.id);
+        notifyListeners();
+      }
+    }
+  }
+
+  void _syncUserServices(String userId) {
+    MarketplaceService().initSync();
+    TransactionService().initSync(userId);
+    NotificationService().initSync(userId);
+  }
+
+  void _clearUserServices() {
+    TransactionService().disposeSync();
+    NotificationService().disposeSync();
+  }
+
+  /// Genuine sign in with email and password via Firebase Authentication
   Future<bool> signInWithEmailPassword(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     final cleanEmail = email.trim().toLowerCase();
-    
-    // Look up in existing registered/demo accounts or create authenticated session
-    final matched = _demoUsers.firstWhere(
-      (u) => u.email.toLowerCase() == cleanEmail,
-      orElse: () => UserProfile(
-        id: const Uuid().v4(),
-        name: email.split('@')[0],
+
+    if (FirebaseService().isInitialized) {
+      final cred = await FirebaseService().signInWithEmail(
         email: cleanEmail,
-        joinedDate: DateTime.now(),
-      ),
+        password: password,
+      );
+      if (cred?.user != null) {
+        final profile = await FirebaseService().ensureUserProfile(cred!.user!);
+        _currentUser = profile;
+        _isAuthenticated = true;
+        _syncUserServices(_currentUser!.id);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    }
+
+    // Testing harness fallback (only when running offline test environment):
+    final matches = _testUsers.where(
+      (u) => u.email.toLowerCase() == cleanEmail,
     );
-    _currentUser = matched;
+    if (matches.isEmpty) {
+      return false;
+    }
+    _currentUser = matches.first;
     _isAuthenticated = true;
+    _syncUserServices(_currentUser!.id);
     notifyListeners();
     return true;
   }
 
+  /// Genuine registration with email, password, and profile metadata
   Future<bool> registerWithEmail({
     required String name,
     required String email,
     required String password,
     String? location,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanName = name.trim();
+
+    if (FirebaseService().isInitialized) {
+      final cred = await FirebaseService().signUpWithEmail(
+        name: cleanName,
+        email: cleanEmail,
+        password: password,
+        location: location,
+      );
+      if (cred?.user != null) {
+        final profile = await FirebaseService().ensureUserProfile(
+          cred!.user!,
+          name: cleanName,
+          location: location,
+        );
+        _currentUser = profile;
+        _isAuthenticated = true;
+        _syncUserServices(profile.id);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    }
+
+    // Testing harness fallback (only when running offline test environment):
     final newUser = UserProfile(
       id: const Uuid().v4(),
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      location: location?.trim().isNotEmpty == true ? location!.trim() : "Local Community",
+      name: cleanName,
+      email: cleanEmail,
+      location: location?.trim().isNotEmpty == true
+          ? location!.trim()
+          : "Local Community",
       joinedDate: DateTime.now(),
       isVerified: true,
+      isAdmin: false,
     );
-    _demoUsers.add(newUser);
+    _testUsers.add(newUser);
     _currentUser = newUser;
     _isAuthenticated = true;
+    _syncUserServices(newUser.id);
     notifyListeners();
     return true;
   }
 
-  // Developer & Evaluation Mode Only: Quickly switch active profile
-  void switchDemoUser(String userId) {
-    final user = _demoUsers.firstWhere(
-      (u) => u.id == userId,
-      orElse: () => _demoUsers[0],
-    );
-    _currentUser = user;
-    _isAuthenticated = true;
-    notifyListeners();
-  }
-
   void signOut() {
+    if (FirebaseService().isInitialized) {
+      FirebaseService().signOut();
+    }
     _currentUser = null;
     _isAuthenticated = false;
+    _clearUserServices();
     notifyListeners();
   }
 
-  void updateProfile({
+  /// Send password reset link to user email via Firebase Authentication
+  Future<void> sendPasswordReset(String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    if (FirebaseService().isInitialized) {
+      await FirebaseService().sendPasswordReset(cleanEmail);
+    }
+  }
+
+  Future<void> updateProfile({
     String? name,
     String? bio,
     String? location,
-  }) {
+  }) async {
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
         name: name,
@@ -129,6 +189,19 @@ class AuthService extends ChangeNotifier {
         location: location,
       );
       notifyListeners();
+
+      if (FirebaseService().isInitialized) {
+        try {
+          await FirebaseService().updateUserProfile(
+            uid: _currentUser!.id,
+            name: name,
+            bio: bio,
+            location: location,
+          );
+        } catch (e) {
+          debugPrint("Error updating profile in Firebase: $e");
+        }
+      }
     }
   }
 }

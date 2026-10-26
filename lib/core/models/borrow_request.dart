@@ -54,6 +54,7 @@ class BorrowRequest {
   });
 
   BorrowRequest copyWith({
+    String? id,
     RequestStatus? status,
     String? handoverQrToken,
     String? returnQrToken,
@@ -62,7 +63,7 @@ class BorrowRequest {
     bool clearReturnToken = false,
   }) {
     return BorrowRequest(
-      id: id,
+      id: id ?? this.id,
       listingId: listingId,
       itemTitle: itemTitle,
       itemImageUrl: itemImageUrl,
@@ -77,8 +78,12 @@ class BorrowRequest {
       endDate: endDate,
       status: status ?? this.status,
       message: message,
-      handoverQrToken: clearHandoverToken ? null : (handoverQrToken ?? this.handoverQrToken),
-      returnQrToken: clearReturnToken ? null : (returnQrToken ?? this.returnQrToken),
+      handoverQrToken: clearHandoverToken
+          ? null
+          : (handoverQrToken ?? this.handoverQrToken),
+      returnQrToken: clearReturnToken
+          ? null
+          : (returnQrToken ?? this.returnQrToken),
       notes: notes ?? this.notes,
       depositAmount: depositAmount,
     );

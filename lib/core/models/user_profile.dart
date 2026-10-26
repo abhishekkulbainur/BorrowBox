@@ -10,6 +10,7 @@ class UserProfile {
   final int completedLoans;
   final DateTime joinedDate;
   final bool isVerified;
+  final bool isAdmin;
 
   const UserProfile({
     required this.id,
@@ -23,6 +24,7 @@ class UserProfile {
     this.completedLoans = 0,
     required this.joinedDate,
     this.isVerified = true,
+    this.isAdmin = false,
   });
 
   UserProfile copyWith({
@@ -35,6 +37,7 @@ class UserProfile {
     int? reviewCount,
     int? completedLoans,
     bool? isVerified,
+    bool? isAdmin,
   }) {
     return UserProfile(
       id: id,
@@ -48,6 +51,7 @@ class UserProfile {
       completedLoans: completedLoans ?? this.completedLoans,
       joinedDate: joinedDate,
       isVerified: isVerified ?? this.isVerified,
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 
@@ -64,6 +68,7 @@ class UserProfile {
       'completedLoans': completedLoans,
       'joinedDate': joinedDate.toIso8601String(),
       'isVerified': isVerified,
+      'isAdmin': isAdmin,
     };
   }
 
@@ -82,6 +87,7 @@ class UserProfile {
           ? DateTime.parse(map['joinedDate'] as String)
           : DateTime.now(),
       isVerified: map['isVerified'] as bool? ?? true,
+      isAdmin: map['isAdmin'] as bool? ?? false,
     );
   }
 }

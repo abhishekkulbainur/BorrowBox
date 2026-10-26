@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/services/community_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
 
 class CommunitiesScreen extends ConsumerWidget {
   const CommunitiesScreen({super.key});
@@ -36,9 +37,15 @@ class CommunitiesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Local Communities",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            AppLogo.icon(size: 28, borderRadius: 6),
+            SizedBox(width: 10),
+            Text(
+              "Local Communities",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
       body: ListView(
@@ -154,7 +161,9 @@ class CommunitiesScreen extends ConsumerWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: theme.colorScheme.surfaceContainerHighest,
+                                      color: theme
+                                          .colorScheme
+                                          .surfaceContainerHighest,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -225,7 +234,9 @@ class CommunitiesScreen extends ConsumerWidget {
                                 onPressed: () {
                                   communityService.toggleJoinCommunity(comm.id);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Joined ${comm.name}!")),
+                                    SnackBar(
+                                      content: Text("Joined ${comm.name}!"),
+                                    ),
                                   );
                                 },
                                 child: const Text("Join Circle"),

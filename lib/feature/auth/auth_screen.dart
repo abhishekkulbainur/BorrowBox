@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
+import 'package:lendnborrow/feature/admin/admin_dashboard_screen.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -36,9 +38,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final auth = ref.watch(authServiceProvider);
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -50,38 +49,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 64,
-                    color: theme.colorScheme.primary,
-                  ),
+                  const Center(child: AppLogo(size: 130, borderRadius: 18)),
                   const SizedBox(height: 12),
-                  Text(
-                    "BorrowBox",
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  Text(
-                    "Share More. Own Less.",
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withAlpha(25),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      "Open Community Platform • Anyone can register and share",
+                      "BorrowBox Community • Share More. Own Less.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 11,
@@ -98,17 +79,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       decoration: InputDecoration(
                         labelText: "Full Name *",
                         prefixIcon: const Icon(Icons.person_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? "Name required" : null,
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? "Name required"
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _locationController,
                       decoration: InputDecoration(
-                        labelText: "General Area / Neighborhood (e.g., Koramangala)",
+                        labelText:
+                            "General Area / Neighborhood (e.g., Koramangala)",
                         prefixIcon: const Icon(Icons.location_on_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -118,13 +106,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: "Personal Email *",
+                      labelText: "Email Address *",
                       hintText: "you@example.com",
                       prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) =>
-                        v == null || !v.contains('@') ? "Enter a valid email address" : null,
+                    validator: (v) => v == null || !v.contains('@')
+                        ? "Enter a valid email address"
+                        : null,
                   ),
                   const SizedBox(height: 12),
 
@@ -134,26 +125,48 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     decoration: InputDecoration(
                       labelText: "Password *",
                       prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    validator: (v) =>
-                        v == null || v.length < 6 ? "Minimum 6 characters required" : null,
+                    validator: (v) => v == null || v.length < 6
+                        ? "Minimum 6 characters required"
+                        : null,
                   ),
-                  const SizedBox(height: 20),
+                  if (!_isSignUp)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _showForgotPasswordDialog,
+                        child: const Text("Forgot password?"),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 16),
+                  const SizedBox(height: 4),
 
                   FilledButton(
                     onPressed: _isLoading ? null : _submitAuth,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : Text(_isSignUp ? "Create Free Account" : "Sign In to BorrowBox"),
+                        : Text(
+                            _isSignUp
+                                ? "Create Free Account"
+                                : "Sign In to BorrowBox",
+                          ),
                   ),
                   const SizedBox(height: 12),
 
@@ -169,67 +182,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           : "Don't have an account? Sign Up for Free",
                     ),
                   ),
-                  // Explicitly Labelled Developer & Test Evaluation Mode Only
-                  if (auth.isDevMode) ...[
-                    const Divider(height: 32),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withAlpha(70)),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.developer_mode, size: 16, color: Colors.amber),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Developer & Test Evaluation Mode Only",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber[900],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            "One-tap test account switcher for multi-user workflow evaluation:",
-                            style: TextStyle(fontSize: 11),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    auth.switchDemoUser("user_abhishek");
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: const Text("Abhishek (Owner)"),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    auth.switchDemoUser("user_snehal");
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: const Text("Snehal (Borrower)"),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -259,11 +211,49 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           );
         }
         if (mounted) {
-          Navigator.of(context).pop();
+          final isUserAdmin = auth.currentUser?.isAdmin == true;
+          if (isUserAdmin) {
+            Navigator.of(
+              context,
+            ).pushReplacementNamed(AdminDashboardScreen.path);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                backgroundColor: Color(0xFF00E5FF),
+                content: Text(
+                  "Authenticated as Administrator. Accessing Command Center...",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          } else {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.green[800],
+                content: Text(
+                  "Welcome to BorrowBox, ${auth.currentUser?.name}!",
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final errorMsg = e
+              .toString()
+              .replaceAll("Exception: ", "")
+              .replaceAll(RegExp(r'\[.*?\]'), '')
+              .trim();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              backgroundColor: Colors.green[800],
-              content: Text("Welcome to BorrowBox, ${auth.currentUser?.name}!"),
+              backgroundColor: Colors.red[800],
+              content: Text(
+                "Authentication Failed: ${errorMsg.isNotEmpty ? errorMsg : e.toString()}",
+              ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -271,5 +261,80 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         if (mounted) setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController(text: _emailController.text);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Reset Password"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Enter your registered email address and we'll send you a password reset link:",
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: "Email Address",
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Cancel"),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty || !email.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Please enter a valid email address."),
+                  ),
+                );
+                return;
+              }
+              Navigator.of(ctx).pop();
+              try {
+                await ref.read(authServiceProvider).sendPasswordReset(email);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.green[800],
+                      content: Text(
+                        "Password reset email sent to $email. Please check your inbox.",
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.red[800],
+                      content: Text("Failed to send reset email: $e"),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text("Send Link"),
+          ),
+        ],
+      ),
+    );
   }
 }

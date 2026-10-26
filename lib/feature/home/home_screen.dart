@@ -10,6 +10,7 @@ import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/notification_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/item_card.dart';
 import 'package:lendnborrow/feature/explore/create_listing_screen.dart';
 import 'package:lendnborrow/feature/explore/item_details_screen.dart';
@@ -45,7 +46,10 @@ class HomeScreen extends ConsumerWidget {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -53,23 +57,29 @@ class HomeScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(
-                          "BorrowBox",
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          "Share More. Own Less.",
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        const AppLogo.icon(size: 44, borderRadius: 10),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "BorrowBox",
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Text(
+                              "Share More. Own Less.",
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -109,13 +119,18 @@ class HomeScreen extends ConsumerWidget {
                     color: theme.colorScheme.primaryContainer.withAlpha(45),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: theme.colorScheme.primary.withAlpha(40)),
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withAlpha(40),
+                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(14.0),
                       child: Row(
                         children: [
-                          Icon(Icons.lock_open, color: theme.colorScheme.primary),
+                          Icon(
+                            Icons.lock_open,
+                            color: theme.colorScheme.primary,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -136,7 +151,9 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.of(context).pushNamed(AuthScreen.path),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pushNamed(AuthScreen.path),
                             child: const Text("Sign In"),
                           ),
                         ],
@@ -168,7 +185,9 @@ class HomeScreen extends ConsumerWidget {
                       "$pendingRequests",
                       "Requests",
                       Symbols.inbox,
-                      pendingRequests > 0 ? Colors.orange[800]! : theme.colorScheme.secondary,
+                      pendingRequests > 0
+                          ? Colors.orange[800]!
+                          : theme.colorScheme.secondary,
                     ),
                   ],
                 ),
@@ -218,13 +237,48 @@ class HomeScreen extends ConsumerWidget {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _buildCategoryItem(context, "Tools", Symbols.build, Colors.orange),
-                      _buildCategoryItem(context, "Electronics", Symbols.devices, Colors.blue),
-                      _buildCategoryItem(context, "Books", Symbols.menu_book, Colors.teal),
-                      _buildCategoryItem(context, "Calculators", Symbols.calculate, Colors.indigo),
-                      _buildCategoryItem(context, "Travel", Symbols.camping, Colors.green),
-                      _buildCategoryItem(context, "Sports", Symbols.sports_tennis, Colors.red),
-                      _buildCategoryItem(context, "Games", Symbols.casino, Colors.purple),
+                      _buildCategoryItem(
+                        context,
+                        "Tools",
+                        Symbols.build,
+                        Colors.orange,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Electronics",
+                        Symbols.devices,
+                        Colors.blue,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Books",
+                        Symbols.menu_book,
+                        Colors.teal,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Calculators",
+                        Symbols.calculate,
+                        Colors.indigo,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Travel",
+                        Symbols.camping,
+                        Colors.green,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Sports",
+                        Symbols.sports_tennis,
+                        Colors.red,
+                      ),
+                      _buildCategoryItem(
+                        context,
+                        "Games",
+                        Symbols.casino,
+                        Colors.purple,
+                      ),
                     ],
                   ),
                 ),
@@ -311,7 +365,10 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                       Text(
                         "Every borrowed item avoids single-use purchasing, manufacturing waste, and unnecessary packaging.",
-                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const Divider(height: 20),
                       Row(
@@ -368,7 +425,9 @@ class HomeScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withAlpha(45),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withAlpha(50)),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withAlpha(50),
+          ),
         ),
         child: Column(
           children: [

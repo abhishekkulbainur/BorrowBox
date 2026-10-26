@@ -8,6 +8,7 @@ import 'package:material_symbols_icons/symbols.dart';
 // Project Imports
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/empty_state_view.dart';
 import 'package:lendnborrow/core/widgets/item_card.dart';
 import 'package:lendnborrow/feature/explore/create_listing_screen.dart';
@@ -48,9 +49,15 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Explore Marketplace",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            AppLogo.icon(size: 28, borderRadius: 6),
+            SizedBox(width: 10),
+            Text(
+              "Explore Marketplace",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -66,7 +73,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const CreateListingScreen()),
+            MaterialPageRoute(
+              builder: (context) => const CreateListingScreen(),
+            ),
           );
         },
         icon: const Icon(Icons.add),
@@ -76,7 +85,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         children: [
           // Search input bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
@@ -93,7 +105,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(
+                  80,
+                ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -137,7 +151,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 ? EmptyStateView(
                     icon: Symbols.search_off,
                     title: "No items found",
-                    message: "Try searching with different keywords or reset your filters.",
+                    message:
+                        "Try searching with different keywords or reset your filters.",
                     actionLabel: "Clear Filters",
                     onAction: () {
                       setState(() {
@@ -149,13 +164,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     },
                   )
                 : GridView.builder(
-                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 80, top: 8),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 80,
+                      top: 8,
                     ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.72,
+                        ),
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
@@ -164,12 +185,15 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => ItemDetailsScreen(item: item),
+                              builder: (context) =>
+                                  ItemDetailsScreen(item: item),
                             ),
                           );
                         },
                         onFavoriteToggle: () {
-                          ref.read(marketplaceServiceProvider).toggleFavorite(item.id);
+                          ref
+                              .read(marketplaceServiceProvider)
+                              .toggleFavorite(item.id);
                         },
                       );
                     },
@@ -228,7 +252,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     children: [
                       const Text(
                         "Filter Marketplace",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -245,7 +272,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   const SizedBox(height: 12),
                   SwitchListTile(
                     title: const Text("Only Available Items"),
-                    subtitle: const Text("Hide reserved and currently borrowed items"),
+                    subtitle: const Text(
+                      "Hide reserved and currently borrowed items",
+                    ),
                     value: _onlyAvailable,
                     onChanged: (val) {
                       setModalState(() => _onlyAvailable = val);

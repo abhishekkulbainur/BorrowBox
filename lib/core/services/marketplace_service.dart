@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Flutter Imports
 import 'package:flutter/material.dart';
 
@@ -6,16 +8,44 @@ import 'package:flutter_riverpod/legacy.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/marketplace_item.dart';
+import 'package:lendnborrow/core/services/firebase_service.dart';
 
 class MarketplaceService extends ChangeNotifier {
   static final MarketplaceService _instance = MarketplaceService._internal();
   factory MarketplaceService() => _instance;
   MarketplaceService._internal() {
     _initSeedListings();
+    initSync();
   }
 
   final List<MarketplaceItem> _items = [];
   final Set<String> _favoriteItemIds = {};
+  StreamSubscription<List<MarketplaceItem>>? _itemsSubscription;
+
+  void initSync() {
+    if (!FirebaseService().isInitialized) return;
+    _itemsSubscription?.cancel();
+    _itemsSubscription = FirebaseService().streamItems().listen(
+      (firestoreItems) {
+        if (firestoreItems.isNotEmpty) {
+          _items.clear();
+          for (var item in firestoreItems) {
+            final isFav = _favoriteItemIds.contains(item.id);
+            _items.add(item.copyWith(isFavorite: isFav));
+          }
+          notifyListeners();
+        }
+      },
+      onError: (e) {
+        debugPrint("Marketplace sync error: $e");
+      },
+    );
+  }
+
+  void disposeSync() {
+    _itemsSubscription?.cancel();
+    _itemsSubscription = null;
+  }
 
   List<MarketplaceItem> get allItems => List.unmodifiable(_items);
 
@@ -176,7 +206,8 @@ class MarketplaceService extends ChangeNotifier {
         depositAmount: 1500,
         availability: ItemAvailability.available,
         imageUrls: [],
-        terms: "Keep lens cap on when not shooting; use neck strap at all times.",
+        terms:
+            "Keep lens cap on when not shooting; use neck strap at all times.",
         createdAt: DateTime.now().subtract(const Duration(days: 7)),
         communityName: "Tech Valley Maker Space",
         favoriteCount: 44,
@@ -237,7 +268,9 @@ class MarketplaceService extends ChangeNotifier {
       final isFav = _favoriteItemIds.contains(itemId);
       _items[index] = current.copyWith(
         isFavorite: isFav,
-        favoriteCount: isFav ? current.favoriteCount + 1 : current.favoriteCount - 1,
+        favoriteCount: isFav
+            ? current.favoriteCount + 1
+            : current.favoriteCount - 1,
       );
     }
     notifyListeners();
@@ -253,9 +286,24 @@ class MarketplaceService extends ChangeNotifier {
     return _items.where((i) => i.ownerId == ownerId).toList();
   }
 
-  void addListing(MarketplaceItem item) {
+  Future<void> addListing(MarketplaceItem item) async {
     _items.insert(0, item);
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      try {
+        final docId = await FirebaseService().createItem(item);
+        if (docId != null && docId.isNotEmpty) {
+          final index = _items.indexWhere((i) => i.id == item.id);
+          if (index != -1) {
+            _items[index] = _items[index].copyWith(id: docId);
+            notifyListeners();
+          }
+        }
+      } catch (e) {
+        debugPrint("Error publishing item to Firebase: $e");
+      }
+    }
   }
 
   void updateAvailability(String itemId, ItemAvailability status) {
@@ -275,10 +323,18 @@ class MarketplaceService extends ChangeNotifier {
     _items.removeWhere((i) => i.id == itemId);
     _favoriteItemIds.remove(itemId);
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().deleteItem(itemId).catchError((e) {
+        debugPrint("Error deleting item from Firebase: $e");
+      });
+    }
     return true;
   }
 }
 
-final marketplaceServiceProvider = ChangeNotifierProvider<MarketplaceService>((ref) {
+final marketplaceServiceProvider = ChangeNotifierProvider<MarketplaceService>((
+  ref,
+) {
   return MarketplaceService();
 });

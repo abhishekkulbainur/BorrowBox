@@ -11,16 +11,16 @@ class StatusBadge extends StatelessWidget {
   final ItemCondition? condition;
 
   const StatusBadge.request(this.requestStatus, {super.key})
-      : availability = null,
-        condition = null;
+    : availability = null,
+      condition = null;
 
   const StatusBadge.availability(this.availability, {super.key})
-      : requestStatus = null,
-        condition = null;
+    : requestStatus = null,
+      condition = null;
 
   const StatusBadge.condition(this.condition, {super.key})
-      : requestStatus = null,
-        availability = null;
+    : requestStatus = null,
+      availability = null;
 
   @override
   Widget build(BuildContext context) {
@@ -136,11 +136,7 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: fg),
       ),
     );
   }

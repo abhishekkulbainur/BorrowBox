@@ -52,20 +52,31 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
       appBar: AppBar(
         title: Text(currentItem.title),
         actions: [
+          if (isMyItem)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: "Delete Listing",
+              onPressed: () =>
+                  _confirmDeleteListing(context, currentItem, currentUser?.id),
+            ),
           IconButton(
             icon: Icon(
               currentItem.isFavorite ? Icons.favorite : Icons.favorite_border,
               color: currentItem.isFavorite ? Colors.red : null,
             ),
             onPressed: () {
-              ref.read(marketplaceServiceProvider).toggleFavorite(currentItem.id);
+              ref
+                  .read(marketplaceServiceProvider)
+                  .toggleFavorite(currentItem.id);
             },
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Listing link copied to clipboard")),
+                const SnackBar(
+                  content: Text("Listing link copied to clipboard"),
+                ),
               );
             },
           ),
@@ -114,7 +125,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("You are the owner of this listing.")),
+                      const SnackBar(
+                        content: Text("You are the owner of this listing."),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.person),
@@ -122,11 +135,16 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 )
               else
                 FilledButton.icon(
-                  onPressed: currentItem.availability == ItemAvailability.available
+                  onPressed:
+                      currentItem.availability == ItemAvailability.available
                       ? () {
                           if (currentUser == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Please sign in or register to borrow items.")),
+                              const SnackBar(
+                                content: Text(
+                                  "Please sign in or register to borrow items.",
+                                ),
+                              ),
                             );
                             Navigator.of(context).pushNamed(AuthScreen.path);
                             return;
@@ -200,7 +218,8 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(60),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withAlpha(60),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: theme.colorScheme.outlineVariant.withAlpha(60),
@@ -210,7 +229,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: theme.colorScheme.primary.withAlpha(40),
+                          backgroundColor: theme.colorScheme.primary.withAlpha(
+                            40,
+                          ),
                           child: Text(
                             currentItem.ownerName[0],
                             style: TextStyle(
@@ -228,7 +249,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                                 children: [
                                   Text(
                                     currentItem.ownerName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
@@ -240,7 +263,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                               ),
                               Row(
                                 children: [
-                                  const Icon(Icons.star, size: 14, color: Colors.amber),
+                                  const Icon(
+                                    Icons.star,
+                                    size: 14,
+                                    color: Colors.amber,
+                                  ),
                                   const SizedBox(width: 2),
                                   Text(
                                     "${currentItem.ownerRating.toStringAsFixed(1)} (Peer Rated)",
@@ -406,8 +433,8 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   Text(
                     "Request to Borrow",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     item.title,
@@ -428,19 +455,25 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                               context: context,
                               initialDate: _startDate,
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 60)),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 60),
+                              ),
                             );
                             if (picked != null) {
                               setModalState(() {
                                 _startDate = picked;
                                 if (_endDate.isBefore(_startDate)) {
-                                  _endDate = _startDate.add(const Duration(days: 2));
+                                  _endDate = _startDate.add(
+                                    const Duration(days: 2),
+                                  );
                                 }
                               });
                             }
                           },
                           icon: const Icon(Icons.date_range, size: 16),
-                          label: Text("From: ${DateFormat.yMd().format(_startDate)}"),
+                          label: Text(
+                            "From: ${DateFormat.yMd().format(_startDate)}",
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -451,7 +484,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                               context: context,
                               initialDate: _endDate,
                               firstDate: _startDate,
-                              lastDate: _startDate.add(Duration(days: item.maxDurationDays)),
+                              lastDate: _startDate.add(
+                                Duration(days: item.maxDurationDays),
+                              ),
                             );
                             if (picked != null) {
                               setModalState(() {
@@ -460,7 +495,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                             }
                           },
                           icon: const Icon(Icons.event, size: 16),
-                          label: Text("Until: ${DateFormat.yMd().format(_endDate)}"),
+                          label: Text(
+                            "Until: ${DateFormat.yMd().format(_endDate)}",
+                          ),
                         ),
                       ),
                     ],
@@ -481,8 +518,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     maxLines: 2,
                     decoration: InputDecoration(
                       labelText: "Note for ${item.ownerName}",
-                      hintText: "Why do you need this item? Mention preferred pickup time...",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      hintText:
+                          "Why do you need this item? Mention preferred pickup time...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -497,7 +537,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       }
 
                       try {
-                        await ref.read(transactionServiceProvider).createBorrowRequest(
+                        await ref
+                            .read(transactionServiceProvider)
+                            .createBorrowRequest(
                               item: item,
                               borrowerId: currentUser.id,
                               borrowerName: currentUser.name,
@@ -522,7 +564,12 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: Colors.red[800],
-                              content: Text(e.toString().replaceAll("ArgumentError: ", "").replaceAll("Exception: ", "")),
+                              content: Text(
+                                e
+                                    .toString()
+                                    .replaceAll("ArgumentError: ", "")
+                                    .replaceAll("Exception: ", ""),
+                              ),
                             ),
                           );
                         }
@@ -539,6 +586,52 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           },
         );
       },
+    );
+  }
+
+  void _confirmDeleteListing(
+    BuildContext context,
+    MarketplaceItem item,
+    String? actorId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Listing?"),
+        content: Text(
+          "Are you sure you want to remove '${item.title}' from the community marketplace? This cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Cancel"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red[800]),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final ok = ref
+                  .read(marketplaceServiceProvider)
+                  .deleteListing(item.id, actorId: actorId);
+              if (ok) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Listing '${item.title}' was deleted."),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Failed to delete listing: unauthorized."),
+                  ),
+                );
+              }
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
     );
   }
 }

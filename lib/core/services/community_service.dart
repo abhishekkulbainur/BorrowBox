@@ -82,7 +82,9 @@ class CommunityService extends ChangeNotifier {
       final newJoined = !current.isJoined;
       _communities[index] = current.copyWith(
         isJoined: newJoined,
-        memberCount: newJoined ? current.memberCount + 1 : current.memberCount - 1,
+        memberCount: newJoined
+            ? current.memberCount + 1
+            : current.memberCount - 1,
       );
       notifyListeners();
     }
@@ -93,6 +95,8 @@ class CommunityService extends ChangeNotifier {
   }
 }
 
-final communityServiceProvider = ChangeNotifierProvider<CommunityService>((ref) {
+final communityServiceProvider = ChangeNotifierProvider<CommunityService>((
+  ref,
+) {
   return CommunityService();
 });

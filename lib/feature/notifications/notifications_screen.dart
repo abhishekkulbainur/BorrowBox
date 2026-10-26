@@ -10,6 +10,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:lendnborrow/core/models/app_notification.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/notification_service.dart';
+import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/empty_state_view.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -64,12 +65,23 @@ class NotificationsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Notifications"),
+        title: const Row(
+          children: [
+            AppLogo.icon(size: 28, borderRadius: 6),
+            SizedBox(width: 10),
+            Text(
+              "Notifications",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
         actions: [
           if (notifications.isNotEmpty)
             TextButton(
               onPressed: () {
-                ref.read(notificationServiceProvider).markAllAsReadForUser(userId);
+                ref
+                    .read(notificationServiceProvider)
+                    .markAllAsReadForUser(userId);
               },
               child: const Text("Mark All Read"),
             ),
@@ -79,7 +91,8 @@ class NotificationsScreen extends ConsumerWidget {
           ? const EmptyStateView(
               icon: Symbols.notifications_off,
               title: "No Notifications",
-              message: "When peers request items or return loans, updates will appear here.",
+              message:
+                  "When peers request items or return loans, updates will appear here.",
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -103,7 +116,10 @@ class NotificationsScreen extends ConsumerWidget {
                     ),
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -119,7 +135,9 @@ class NotificationsScreen extends ConsumerWidget {
                     title: Text(
                       notif.title,
                       style: TextStyle(
-                        fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.bold,
+                        fontWeight: notif.isRead
+                            ? FontWeight.w600
+                            : FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
@@ -145,7 +163,9 @@ class NotificationsScreen extends ConsumerWidget {
                       ],
                     ),
                     onTap: () {
-                      ref.read(notificationServiceProvider).markAsRead(notif.id);
+                      ref
+                          .read(notificationServiceProvider)
+                          .markAsRead(notif.id);
                     },
                   ),
                 );
