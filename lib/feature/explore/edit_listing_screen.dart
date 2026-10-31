@@ -9,10 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
+import 'package:lendnborrow/core/cfg/cloudinary_config.dart';
+import 'package:lendnborrow/core/models/listing_image.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/services/cloudinary_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
-import 'package:lendnborrow/core/services/storage_service.dart';
 import 'package:lendnborrow/core/utils/responsive.dart';
 import 'package:lendnborrow/core/widgets/product_image_view.dart';
 
@@ -80,8 +82,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   int get _totalPhotoCount => _currentPhotoUrls.length + _newPhotoFiles.length;
 
   Future<void> _pickFromGallery() async {
-    final storage = StorageService();
-    final picked = await storage.pickImagesFromGallery(
+    final cloudinary = CloudinaryService();
+    final picked = await cloudinary.pickImagesFromGallery(
       currentCount: _totalPhotoCount,
     );
 
@@ -93,15 +95,15 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   }
 
   Future<void> _captureFromCamera() async {
-    if (_totalPhotoCount >= StorageService.maxImagesPerListing) {
+    if (_totalPhotoCount >= CloudinaryConfig.maxImagesPerListing) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Maximum of 5 photos reached")),
       );
       return;
     }
 
-    final storage = StorageService();
-    final photo = await storage.captureImageFromCamera();
+    final cloudinary = CloudinaryService();
+    final photo = await cloudinary.captureImageFromCamera();
 
     if (photo != null && mounted) {
       setState(() {
@@ -255,7 +257,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     ),
                   ),
                   Text(
-                    "$_totalPhotoCount/${StorageService.maxImagesPerListing} photos",
+                    "$_totalPhotoCount/${CloudinaryConfig.maxImagesPerListing} photos",
                     style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
                   ),
                 ],
@@ -390,7 +392,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     }),
 
                     // Add more button if space permits
-                    if (_totalPhotoCount < StorageService.maxImagesPerListing)
+                    if (_totalPhotoCount < CloudinaryConfig.maxImagesPerListing)
                       Container(
                         width: 100,
                         decoration: BoxDecoration(
@@ -632,16 +634,22 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
       final deposit = double.tryParse(_depositController.text.trim());
       final duration = int.parse(_durationController.text.trim());
 
-      // If new photos were added, upload them to Firebase Storage
+      // If new photos were added, upload them to Cloudinary
       final List<String> finalUrls = List.from(_currentPhotoUrls);
+      List<ListingImage> updatedImagesMeta = List.from(widget.item.images);
+      updatedImagesMeta.removeWhere(
+          (img) => !_currentPhotoUrls.contains(img.secureUrl));
+
       if (_newPhotoFiles.isNotEmpty) {
-        final storage = StorageService();
-        final newUrls = await storage.uploadListingImages(
+        final cloudinary = CloudinaryService();
+        final newUploaded = await cloudinary.uploadListingImages(
           userId: widget.item.ownerId,
           itemId: widget.item.id,
           files: _newPhotoFiles,
+          coverIndex: 0,
         );
-        finalUrls.addAll(newUrls);
+        updatedImagesMeta.addAll(newUploaded);
+        finalUrls.addAll(newUploaded.map((img) => img.secureUrl));
       }
 
       // Ensure cover photo is placed at index 0 if cover was changed
@@ -649,6 +657,14 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
         final coverUrl = finalUrls.removeAt(_coverIndex);
         finalUrls.insert(0, coverUrl);
       }
+
+      // Update cover flag in metadata
+      updatedImagesMeta = updatedImagesMeta.asMap().entries.map((e) {
+        return e.value.copyWith(
+          order: e.key,
+          isCover: e.key == 0,
+        );
+      }).toList();
 
       final updated = widget.item.copyWith(
         title: _titleController.text.trim(),
@@ -662,6 +678,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
             ? _termsController.text.trim()
             : null,
         imageUrls: finalUrls,
+        imagesMeta: updatedImagesMeta,
         isActive: _isActive,
         availability: _isActive
             ? (widget.item.availability == ItemAvailability.deactivated
@@ -717,10 +734,13 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     widget.item.id,
                     actorId: currentUserId,
                   );
-              // Clean up associated images from Storage
-              StorageService().deleteItemImages(
-                userId: widget.item.ownerId,
+              // Clean up associated images via CloudinaryService
+              CloudinaryService().deleteListingImages(
                 itemId: widget.item.id,
+                publicIds: widget.item.images
+                    .map((i) => i.publicId)
+                    .where((id) => id.isNotEmpty)
+                    .toList(),
                 imageUrls: widget.item.photoUrls,
               );
               Navigator.of(context).pop();

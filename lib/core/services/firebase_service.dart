@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/legacy.dart';
 // Project Imports
 import 'package:lendnborrow/core/models/app_notification.dart';
 import 'package:lendnborrow/core/models/borrow_request.dart';
+import 'package:lendnborrow/core/models/listing_image.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/models/review.dart';
 import 'package:lendnborrow/core/models/user_profile.dart';
@@ -280,6 +281,25 @@ class FirebaseService extends ChangeNotifier {
         .map((snapshot) {
           return snapshot.docs.map((doc) {
             final d = doc.data();
+
+            final rawImagesMeta = d['imagesMeta'];
+            List<ListingImage>? parsedImagesMeta;
+            if (rawImagesMeta is List) {
+              parsedImagesMeta = rawImagesMeta
+                  .asMap()
+                  .entries
+                  .map((e) => ListingImage.fromMap(
+                        Map<String, dynamic>.from(e.value as Map),
+                        fallbackOrder: e.key,
+                        fallbackCover: e.key == 0,
+                      ))
+                  .toList();
+            }
+
+            final List<String> parsedUrls = List<String>.from(
+              d['imageUrls'] ?? parsedImagesMeta?.map((img) => img.secureUrl) ?? [],
+            );
+
             return MarketplaceItem(
               id: doc.id,
               ownerId: d['ownerId'] ?? '',
@@ -302,7 +322,8 @@ class FirebaseService extends ChangeNotifier {
                 (a) => a.name == d['availability'],
                 orElse: () => ItemAvailability.available,
               ),
-              imageUrls: List<String>.from(d['imageUrls'] ?? []),
+              imageUrls: parsedUrls,
+              imagesMeta: parsedImagesMeta,
               terms: d['terms'],
               createdAt:
                   (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -330,6 +351,8 @@ class FirebaseService extends ChangeNotifier {
       'depositAmount': item.depositAmount,
       'availability': item.availability.name,
       'imageUrls': item.imageUrls,
+      if (item.imagesMeta != null)
+        'imagesMeta': item.imagesMeta!.map((img) => img.toMap()).toList(),
       'terms': item.terms,
       'communityName': item.communityName,
       'favoriteCount': 0,
@@ -359,6 +382,8 @@ class FirebaseService extends ChangeNotifier {
       'depositAmount': item.depositAmount,
       'availability': item.availability.name,
       'imageUrls': item.imageUrls,
+      if (item.imagesMeta != null)
+        'imagesMeta': item.imagesMeta!.map((img) => img.toMap()).toList(),
       'terms': item.terms,
       'isActive': item.isActive,
       'updatedAt': FieldValue.serverTimestamp(),

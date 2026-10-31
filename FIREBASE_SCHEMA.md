@@ -67,7 +67,8 @@ firestore/
 | `depositAmount` | Number? | Optional refundable security deposit |
 | `availability` | String | `available`, `reserved`, `borrowed`, `deactivated` |
 | `isActive` | Boolean | Owner active toggle (pause / resume) |
-| `imageUrls` | Array<String> | Firebase Storage URLs (`borrowbox_images/{itemId}/...`) |
+| `imageUrls` | Array<String> | Cloudinary CDN delivery URLs (or legacy Storage URLs, backward-compatible) |
+| `imagesMeta` | Array<Map> | Rich Cloudinary image metadata objects: `secure_url`, `public_id`, `width`, `height`, `format`, `bytes`, `order`, `is_cover`, `created_at` |
 | `terms` | String? | Special lending condition / instructions |
 | `communityId` | String? | ID of community if scoped |
 | `communityName` | String? | Name of community |
@@ -257,39 +258,54 @@ firestore/
 
 ---
 
-## 9. 🗄️ Firebase Storage Buckets Architecture
+---
 
-BorrowBox employs an authenticated, user-namespaced storage topology that guarantees complete ownership boundaries and prevents unauthorized asset tampering or orphan file accumulation.
+## 9. ☁️ Product Image Architecture: Cloudinary Integration
 
-### Storage Paths
-```
-storage/
-├── users/ {userId}/
-│   └── items/ {itemId}/
-│       └── images/ {imageId}.jpg    # Production product photographs (up to 5 per item)
-├── items/ {itemId}/
-│   └── {imageId}.jpg                # Direct item reference fallback
-├── avatars/ {userId}/
-│   └── {fileName}.jpg               # User profile avatar photos
-└── chat_attachments/ {conversationId}/
-    └── {fileName}.jpg               # Direct 1-to-1 conversation media attachments
+To avoid Google Cloud / Firebase Blaze plan requirements ($0 free-tier without credit cards or surprise paywalls), product image storage and CDN delivery in BorrowBox is powered by **Cloudinary**.
+
+### Zero-Secret Client Architecture
+BorrowBox communicates with Cloudinary's Upload API strictly using **unsigned upload presets**.
+- **No API Secret** or Admin API credentials are ever embedded in or accessible to Flutter client code.
+- Endpoint: `POST https://api.cloudinary.com/v1_1/<cloud_name>/image/upload`
+- Multipart form parameters:
+  - `upload_preset`: Unsigned preset configured in Cloudinary Dashboard.
+  - `folder`: `borrowbox/product_images`
+  - `tags`: `borrowbox,product_listing,{userId},{itemId}`
+  - `context`: `user_id={userId}|item_id={itemId}|app=borrowbox`
+
+### Saved Firestore Image Schema (`imagesMeta`)
+Each item document in Firestore persists:
+```json
+"imagesMeta": [
+  {
+    "secure_url": "https://res.cloudinary.com/<cloud>/image/upload/v1730380000/borrowbox/product_images/item_1_0.jpg",
+    "public_id": "borrowbox/product_images/item_1_0",
+    "width": 1280,
+    "height": 960,
+    "format": "jpg",
+    "bytes": 245120,
+    "order": 0,
+    "is_cover": true,
+    "created_at": "2026-10-31T08:00:00.000Z"
+  }
+]
 ```
 
 ### Image Pipeline & Performance Constraints
-1. **Format Validation**: Strict validation for `.jpg`, `.jpeg`, `.png`, and `.webp`.
-2. **File Size Limit**: Max 10MB input file size enforced by client validation and Cloud Storage security rules (`request.resource.size <= 10 * 1024 * 1024`).
+1. **Format Validation**: Strict client validation for `.jpg`, `.jpeg`, `.png`, and `.webp`.
+2. **File Size Limit**: Max 10MB input file size before compression (`CloudinaryConfig.maxFileSizeBytes`).
 3. **Pre-Upload Compression**:
    - Engine: `flutter_image_compress`
-   - Resolution Cap: 1280 x 1280 logical pixels (ideal for high-density mobile displays while avoiding waste).
+   - Resolution Cap: 1280 x 1280 logical pixels.
    - Target Quality: 80% JPEG.
-   - Resulting Payload: ~150KB - 350KB per photo (down from original 5MB - 12MB photos).
-4. **Client-Side Image Caching**:
+   - Resulting Payload: ~150KB - 350KB per photo.
+4. **Client-Side Image Caching & Dynamic Transformations**:
    - Library: `cached_network_image` with local disk persistence and memory constraints (`memCacheWidth: 600`).
-   - Placeholder: Subtle shimmer/tonal surface container with category icon fallback.
+   - Dynamic URL Transformation: `CloudinaryConfig.getOptimizedUrl` automatically injects `f_auto,q_auto,w_{width},c_limit` into Cloudinary delivery URLs for device-responsive bandwidth conservation.
    - Interactive zoom: `InteractiveViewer` with 0.8x to 4.0x pinch-to-zoom for detailed condition inspection.
-5. **Deletion & Garbage Collection**:
-   - When an item listing is deleted by its owner or admin, `StorageService.deleteItemImages` automatically deletes all associated Storage blobs.
-6. **Hardened Storage Security Rules**:
-   - Primary `users/{userId}/...` path: strictly enforces `request.auth.uid == userId` or `isAdmin()`.
-   - Fallback `items/{itemId}/...` & `borrowbox_images/{itemId}/...` paths: strictly requires Firestore item ownership verification (`firestore.get(/databases/(default)/documents/items/$(itemId)).data.ownerId == request.auth.uid`), upload metadata validation (`metadata.userId == request.auth.uid`), or platform administrator privileges. Unauthenticated or non-owner deletions and overwrites are strictly rejected.
+5. **Secure Asset Deletion & Garbage Collection**:
+   - Asset destruction in Cloudinary requires HMAC-SHA1 API signature.
+   - To maintain zero-secret client security, deletion requests are registered safely on the client while permanent Cloudinary storage garbage collection is handled via serverless backend webhooks.
+
 

@@ -10,10 +10,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
 
 // Project Imports
+import 'package:lendnborrow/core/cfg/cloudinary_config.dart';
+import 'package:lendnborrow/core/models/listing_image.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/services/cloudinary_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
-import 'package:lendnborrow/core/services/storage_service.dart';
 import 'package:lendnborrow/core/utils/responsive.dart';
 import 'package:lendnborrow/core/widgets/product_image_view.dart';
 import 'package:lendnborrow/feature/auth/auth_screen.dart';
@@ -58,8 +60,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
 
   // Pick photos from device gallery
   Future<void> _pickFromGallery() async {
-    final storage = StorageService();
-    final picked = await storage.pickImagesFromGallery(
+    final cloudinary = CloudinaryService();
+    final picked = await cloudinary.pickImagesFromGallery(
       currentCount: _selectedPhotos.length,
     );
 
@@ -75,15 +77,15 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
 
   // Capture photo from camera
   Future<void> _captureFromCamera() async {
-    if (_selectedPhotos.length >= StorageService.maxImagesPerListing) {
+    if (_selectedPhotos.length >= CloudinaryConfig.maxImagesPerListing) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Maximum of 5 photos reached")),
       );
       return;
     }
 
-    final storage = StorageService();
-    final photo = await storage.captureImageFromCamera();
+    final cloudinary = CloudinaryService();
+    final photo = await cloudinary.captureImageFromCamera();
 
     if (photo != null && mounted) {
       setState(() {
@@ -203,7 +205,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      "${_selectedPhotos.length}/${StorageService.maxImagesPerListing} photos",
+                      "${_selectedPhotos.length}/${CloudinaryConfig.maxImagesPerListing} photos",
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -533,7 +535,10 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
           height: 170,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: _selectedPhotos.length + (_selectedPhotos.length < StorageService.maxImagesPerListing ? 1 : 0),
+            itemCount: _selectedPhotos.length +
+                (_selectedPhotos.length < CloudinaryConfig.maxImagesPerListing
+                    ? 1
+                    : 0),
             separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               if (index == _selectedPhotos.length) {
@@ -679,26 +684,21 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     final itemId = "item_${const Uuid().v4().substring(0, 8)}";
 
     try {
-      // Re-order photos so the chosen cover photo is at index 0
-      final List<File> orderedFiles = List.from(_selectedPhotos);
-      if (_coverPhotoIndex > 0 && _coverPhotoIndex < orderedFiles.length) {
-        final coverFile = orderedFiles.removeAt(_coverPhotoIndex);
-        orderedFiles.insert(0, coverFile);
-      }
-
-      // Upload photos to Firebase Storage
-      List<String> uploadedUrls = [];
-      if (orderedFiles.isNotEmpty) {
-        final storage = StorageService();
-        uploadedUrls = await storage.uploadListingImages(
+      // Upload photos to Cloudinary using unsigned preset
+      List<ListingImage> uploadedImages = [];
+      if (_selectedPhotos.isNotEmpty) {
+        final cloudinary = CloudinaryService();
+        uploadedImages = await cloudinary.uploadListingImages(
           userId: currentUser.id,
           itemId: itemId,
-          files: orderedFiles,
+          files: _selectedPhotos,
+          coverIndex: _coverPhotoIndex,
           onProgress: (progress, current, total) {
             if (mounted) {
               setState(() {
                 _uploadProgress = 0.1 + (progress * 0.8);
-                _uploadStatusMessage = "Uploading photo $current of $total (${(progress * 100).toInt()}%)...";
+                _uploadStatusMessage =
+                    "Uploading photo $current of $total (${(progress * 100).toInt()}%)...";
               });
             }
           },
@@ -709,6 +709,9 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
         _uploadProgress = 0.95;
         _uploadStatusMessage = "Finalizing listing in marketplace...";
       });
+
+      final List<String> finalUrls =
+          uploadedImages.map((img) => img.secureUrl).toList();
 
       final newItem = MarketplaceItem(
         id: itemId,
@@ -726,7 +729,8 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
             ? _termsController.text.trim()
             : null,
         createdAt: DateTime.now(),
-        imageUrls: uploadedUrls,
+        imageUrls: finalUrls,
+        imagesMeta: uploadedImages,
         availability: ItemAvailability.available,
       );
 
@@ -738,7 +742,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.green[800],
-            content: Text("Published '${newItem.title}' with ${uploadedUrls.length} photos!"),
+            content: Text("Published '${newItem.title}' with ${uploadedImages.length} photos!"),
           ),
         );
       }

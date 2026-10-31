@@ -54,9 +54,10 @@ class ItemCard extends StatelessWidget {
                         top: Radius.circular(15),
                       ),
                       child: ProductImageView(
-                        imageUrl: item.photoUrls.isNotEmpty
-                            ? item.photoUrls.first
-                            : null,
+                        imageUrl: item.coverImageUrl ??
+                            (item.photoUrls.isNotEmpty
+                                ? item.photoUrls.first
+                                : null),
                         category: item.category,
                         fit: BoxFit.cover,
                       ),

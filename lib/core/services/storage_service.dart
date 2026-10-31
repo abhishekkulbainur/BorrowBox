@@ -20,6 +20,12 @@ final storageServiceProvider = ChangeNotifierProvider<StorageService>((ref) {
   return StorageService();
 });
 
+/// Legacy Firebase Storage Service.
+///
+/// DEPRECATED: Product image uploads, storage, and delivery have been migrated to
+/// Cloudinary via [CloudinaryService] to avoid Firebase Blaze paywall requirements.
+/// This class is retained exclusively for backward-compatibility.
+@Deprecated('Use CloudinaryService for product images')
 class StorageService extends ChangeNotifier {
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;

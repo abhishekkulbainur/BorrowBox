@@ -9,11 +9,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
+import 'package:lendnborrow/core/cfg/cloudinary_config.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 
 /// High-performance, memory-efficient product image renderer.
 /// Handles remote URLs via [CachedNetworkImage], local files, and assets with
 /// smooth loading placeholders, error fallbacks, and memory cache constraints.
+/// Automatically applies Cloudinary mobile-friendly CDN transformations when applicable.
 class ProductImageView extends StatelessWidget {
   final String? imageUrl;
   final ItemCategory? category;
@@ -45,8 +47,15 @@ class ProductImageView extends StatelessWidget {
     if (url.isEmpty) {
       content = _buildPlaceholder(context, theme);
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Apply Cloudinary on-the-fly transformation (f_auto, q_auto, responsive width)
+      final deliveryUrl = CloudinaryConfig.getOptimizedUrl(
+        url,
+        width: width != null ? (width! * 1.5).toInt() : 600,
+        height: height != null ? (height! * 1.5).toInt() : null,
+      );
+
       content = CachedNetworkImage(
-        imageUrl: url,
+        imageUrl: deliveryUrl,
         fit: fit,
         width: width,
         height: height,

@@ -47,3 +47,19 @@ app.*.map.json
 
 # Shows i10n missing translations
 desiredFileName.txt
+
+# Environment variables & secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.keystore
+*.jks
+serviceAccount*.json
+*credentials*.json
+
+# Temporary files & artifacts
+scratch/
+*.tmp
+

@@ -303,7 +303,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                   children: [
                     if (item != null) ...[
                       ProductImageView(
-                        imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                        imageUrl: item.coverImageUrl ??
+                            (item.photoUrls.isNotEmpty
+                                ? item.photoUrls.first
+                                : null),
                         category: item.category,
                         width: 44,
                         height: 44,
@@ -559,7 +562,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
               children: [
                 if (item != null) ...[
                   ProductImageView(
-                    imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                    imageUrl: item.coverImageUrl ??
+                        (item.photoUrls.isNotEmpty
+                            ? item.photoUrls.first
+                            : null),
                     category: item.category,
                     width: 44,
                     height: 44,
@@ -704,7 +710,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
               children: [
                 if (item != null) ...[
                   ProductImageView(
-                    imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                    imageUrl: item.coverImageUrl ??
+                        (item.photoUrls.isNotEmpty
+                            ? item.photoUrls.first
+                            : null),
                     category: item.category,
                     width: 44,
                     height: 44,
@@ -867,9 +876,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ProductImageView(
-                      imageUrl: item.photoUrls.isNotEmpty
-                          ? item.photoUrls.first
-                          : null,
+                      imageUrl: item.coverImageUrl ??
+                          (item.photoUrls.isNotEmpty
+                              ? item.photoUrls.first
+                              : null),
                       category: item.category,
                       width: 56,
                       height: 56,
