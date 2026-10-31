@@ -116,4 +116,6 @@ class BorrowRequest {
     final diff = endDate.difference(startDate).inDays;
     return diff <= 0 ? 1 : diff;
   }
+
+  String get itemId => listingId;
 }

@@ -5,19 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:uuid/uuid.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/borrow_request.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
+import 'package:lendnborrow/core/models/review.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/services/chat_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
 import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/empty_state_view.dart';
+import 'package:lendnborrow/core/widgets/product_image_view.dart';
 import 'package:lendnborrow/core/widgets/qr_handover_modal.dart';
 import 'package:lendnborrow/core/widgets/status_badge.dart';
 import 'package:lendnborrow/feature/auth/auth_screen.dart';
 import 'package:lendnborrow/feature/borrowed/borrowed_screen.dart';
+import 'package:lendnborrow/feature/chat/chat_screen.dart';
+import 'package:lendnborrow/feature/explore/edit_listing_screen.dart';
 import 'package:lendnborrow/feature/lent/lent_screen.dart';
 
 class ActivityScreen extends ConsumerStatefulWidget {
@@ -280,29 +286,43 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     final currentUserId = ref.read(currentUserProvider)?.id;
 
     return Card(
-      elevation: 0.5,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(60)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: Builder(
+          builder: (context) {
+            final item = ref.watch(marketplaceServiceProvider).getItemById(req.listingId);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    req.itemTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    if (item != null) ...[
+                      ProductImageView(
+                        imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                        category: item.category,
+                        width: 44,
+                        height: 44,
+                        borderRadius: BorderRadius.circular(8),
+                        fit: BoxFit.cover,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Text(
+                        req.itemTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    StatusBadge.request(req.status),
+                  ],
                 ),
-                StatusBadge.request(req.status),
-              ],
-            ),
             const SizedBox(height: 6),
             Text(
               "Lender: ${req.ownerName}",
@@ -325,6 +345,44 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton.outlined(
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      tooltip: "Chat with Lender",
+                      onPressed: () => _openChat(
+                        context,
+                        otherUserId: req.ownerId,
+                        otherUserName: req.ownerName,
+                        itemId: req.itemId,
+                        itemTitle: req.itemTitle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (req.status == RequestStatus.pending ||
+                        req.status == RequestStatus.handoverPending) ...[
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.colorScheme.error,
+                        ),
+                        onPressed: () {
+                          if (currentUserId != null) {
+                            final ok = txService.cancelRequest(
+                              req.id,
+                              currentUserId,
+                            );
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Request cancelled."),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text("Cancel"),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     if (req.status == RequestStatus.handoverPending)
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
@@ -370,6 +428,21 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                         icon: const Icon(Icons.qr_code_scanner, size: 16),
                         label: const Text("Show Return QR"),
                       )
+                    else if (req.status == RequestStatus.returned)
+                      FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          _showReviewModal(
+                            context,
+                            req,
+                            isReviewingOwner: true,
+                          );
+                        },
+                        icon: const Icon(Icons.star_outline, size: 16),
+                        label: const Text("Rate Lender"),
+                      )
                     else
                       Text(
                         req.statusDisplay,
@@ -382,11 +455,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 ),
               ),
             ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Lent & requests view
   Widget _buildLentTab(
@@ -466,9 +541,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   ) {
     final theme = Theme.of(context);
     final currentUserId = ref.read(currentUserProvider)?.id;
+    final item = ref.watch(marketplaceServiceProvider).getItemById(req.listingId);
 
     return Card(
-      elevation: 0.5,
+      elevation: 0,
       color: Colors.amber.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -481,6 +557,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
           children: [
             Row(
               children: [
+                if (item != null) ...[
+                  ProductImageView(
+                    imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                    category: item.category,
+                    width: 44,
+                    height: 44,
+                    borderRadius: BorderRadius.circular(8),
+                    fit: BoxFit.cover,
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: Text(
                     req.itemTitle,
@@ -524,6 +611,18 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton.outlined(
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      tooltip: "Chat with Borrower",
+                      onPressed: () => _openChat(
+                        context,
+                        otherUserId: req.borrowerId,
+                        otherUserName: req.borrowerName,
+                        itemId: req.itemId,
+                        itemTitle: req.itemTitle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -588,9 +687,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   ) {
     final theme = Theme.of(context);
     final currentUserId = ref.read(currentUserProvider)?.id;
+    final item = ref.watch(marketplaceServiceProvider).getItemById(req.listingId);
 
     return Card(
-      elevation: 0.5,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(60)),
@@ -602,6 +702,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
           children: [
             Row(
               children: [
+                if (item != null) ...[
+                  ProductImageView(
+                    imageUrl: item.photoUrls.isNotEmpty ? item.photoUrls.first : null,
+                    category: item.category,
+                    width: 44,
+                    height: 44,
+                    borderRadius: BorderRadius.circular(8),
+                    fit: BoxFit.cover,
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: Text(
                     req.itemTitle,
@@ -628,6 +739,18 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton.outlined(
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      tooltip: "Chat with Borrower",
+                      onPressed: () => _openChat(
+                        context,
+                        otherUserId: req.borrowerId,
+                        otherUserName: req.borrowerName,
+                        itemId: req.itemId,
+                        itemTitle: req.itemTitle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     if (req.status == RequestStatus.handoverPending)
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
@@ -671,6 +794,21 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                         icon: const Icon(Icons.check, size: 16),
                         label: const Text("Confirm Return Received"),
                       )
+                    else if (req.status == RequestStatus.returned)
+                      FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          _showReviewModal(
+                            context,
+                            req,
+                            isReviewingOwner: false,
+                          );
+                        },
+                        icon: const Icon(Icons.star_outline, size: 16),
+                        label: const Text("Rate Borrower"),
+                      )
                     else
                       Text(
                         req.statusDisplay,
@@ -694,6 +832,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     BuildContext context,
     List<MarketplaceItem> listings,
   ) {
+    final theme = Theme.of(context);
+    final marketplace = ref.read(marketplaceServiceProvider);
+
     if (listings.isEmpty) {
       return EmptyStateView(
         icon: Symbols.inventory_2,
@@ -709,19 +850,167 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = listings[index];
-        return ListTile(
-          tileColor: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withAlpha(40),
+        return Card(
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: theme.colorScheme.outlineVariant.withAlpha(60),
+            ),
           ),
-          title: Text(
-            item.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProductImageView(
+                      imageUrl: item.photoUrls.isNotEmpty
+                          ? item.photoUrls.first
+                          : null,
+                      category: item.category,
+                      width: 56,
+                      height: 56,
+                      borderRadius: BorderRadius.circular(10),
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${item.categoryDisplay} • ${item.pickupLocation}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.isFree
+                                ? "Free Community Share"
+                                : "₹${item.rentalPricePerDay?.toStringAsFixed(0)}/day",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: item.isFree
+                                  ? Colors.green
+                                  : theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    StatusBadge.availability(item.availability),
+                  ],
+                ),
+                const Divider(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => EditListingScreen(item: item),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit, size: 15),
+                      label: const Text("Edit"),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () async {
+                        final newActive = !item.isActive;
+                        await marketplace.toggleListingActive(
+                          item.id,
+                          newActive,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                newActive
+                                    ? "Listing activated!"
+                                    : "Listing paused.",
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: Icon(
+                        item.isActive
+                            ? Icons.pause_circle_outline
+                            : Icons.play_circle_outline,
+                        size: 15,
+                      ),
+                      label: Text(item.isActive ? "Pause" : "Resume"),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                      tooltip: "Delete listing",
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text("Delete Listing?"),
+                            content: Text(
+                              "Are you sure you want to permanently delete '${item.title}'?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text("Cancel"),
+                              ),
+                              FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.error,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text("Delete"),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          marketplace.deleteListing(item.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Listing deleted.")),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          subtitle: Text("${item.categoryDisplay} • ${item.pickupLocation}"),
-          trailing: StatusBadge.availability(item.availability),
         );
       },
     );
@@ -755,6 +1044,132 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                 );
           }
         },
+      ),
+    );
+  }
+
+  Future<void> _openChat(
+    BuildContext context, {
+    required String otherUserId,
+    required String otherUserName,
+    required String itemId,
+    required String itemTitle,
+  }) async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) return;
+
+    final chatService = ref.read(chatServiceProvider);
+    final conversation = await chatService.getOrCreateConversation(
+      currentUserId: currentUser.id,
+      currentUserName: currentUser.displayName,
+      currentUserAvatar: currentUser.avatarUrl,
+      otherUserId: otherUserId,
+      otherUserName: otherUserName,
+      itemId: itemId,
+      itemTitle: itemTitle,
+    );
+
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          conversation: conversation,
+          currentUserId: currentUser.id,
+        ),
+      ),
+    );
+  }
+
+  void _showReviewModal(
+    BuildContext context,
+    BorrowRequest req, {
+    required bool isReviewingOwner,
+  }) {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) return;
+
+    final targetUserId = isReviewingOwner ? req.ownerId : req.borrowerId;
+    final targetUserName = isReviewingOwner ? req.ownerName : req.borrowerName;
+
+    double rating = 5.0;
+    final commentCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          title: Text("Rate $targetUserName"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "How was your experience sharing '${req.itemTitle}'?",
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  final starVal = index + 1;
+                  return IconButton(
+                    onPressed: () {
+                      setModalState(() {
+                        rating = starVal.toDouble();
+                      });
+                    },
+                    icon: Icon(
+                      starVal <= rating ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: commentCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: "Comments or feedback (optional)",
+                  border: OutlineInputBorder(),
+                  hintText: "E.g., Item was in great condition, prompt return!",
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final review = Review(
+                  id: const Uuid().v4(),
+                  transactionId: req.id,
+                  reviewerId: currentUser.id,
+                  reviewerName: currentUser.displayName,
+                  reviewerAvatarUrl: currentUser.avatarUrl,
+                  targetUserId: targetUserId,
+                  rating: rating,
+                  comment: commentCtrl.text.trim(),
+                  createdAt: DateTime.now(),
+                  itemTitle: req.itemTitle,
+                );
+
+                ref.read(transactionServiceProvider).addReview(review);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Thank you for your review!")),
+                  );
+                }
+              },
+              child: const Text("Submit Review"),
+            ),
+          ],
+        ),
       ),
     );
   }

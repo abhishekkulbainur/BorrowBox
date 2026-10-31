@@ -27,6 +27,10 @@ import 'package:lendnborrow/main_screen.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/firebase_service.dart';
 
+import 'package:lendnborrow/feature/chat/conversations_screen.dart';
+import 'package:lendnborrow/feature/wishlist/wishlist_screen.dart';
+import 'package:lendnborrow/feature/support/support_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +38,16 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarContrastEnforced: false,
+      systemStatusBarContrastEnforced: false,
+    ),
+  );
 
   // Initialize Firebase (safely handles local fallback if credentials aren't configured yet)
   await FirebaseService().initialize();
@@ -80,6 +94,9 @@ class MyApp extends ConsumerWidget {
           NotificationsScreen.path: (context) => const NotificationsScreen(),
           AuthScreen.path: (context) => const AuthScreen(),
           AdminDashboardScreen.path: (context) => const AdminDashboardScreen(),
+          ConversationsScreen.path: (context) => const ConversationsScreen(),
+          WishlistScreen.path: (context) => const WishlistScreen(),
+          SupportScreen.path: (context) => const SupportScreen(),
         },
         onUnknownRoute: (settings) => MaterialPageRoute(
           builder: (context) => const MainScreen(child: HomeScreen()),

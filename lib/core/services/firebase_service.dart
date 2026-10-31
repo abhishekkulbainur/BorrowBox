@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:lendnborrow/core/models/app_notification.dart';
 import 'package:lendnborrow/core/models/borrow_request.dart';
 import 'package:lendnborrow/core/models/marketplace_item.dart';
+import 'package:lendnborrow/core/models/review.dart';
 import 'package:lendnborrow/core/models/user_profile.dart';
 import 'package:lendnborrow/firebase_options.dart';
 
@@ -345,6 +346,25 @@ class FirebaseService extends ChangeNotifier {
     await firestore!.collection('items').doc(itemId).delete();
   }
 
+  /// Update an item listing in Firestore
+  Future<void> updateItemListing(MarketplaceItem item) async {
+    if (!_isInitialized) return;
+    await firestore!.collection('items').doc(item.id).update({
+      'title': item.title,
+      'description': item.description,
+      'category': item.category.name,
+      'condition': item.condition.name,
+      'pickupLocation': item.pickupLocation,
+      'maxDurationDays': item.maxDurationDays,
+      'depositAmount': item.depositAmount,
+      'availability': item.availability.name,
+      'imageUrls': item.imageUrls,
+      'terms': item.terms,
+      'isActive': item.isActive,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   // ===========================================================================
   // FIRESTORE: BORROW TRANSACTIONS & HANDOVERS
   // ===========================================================================
@@ -644,6 +664,109 @@ class FirebaseService extends ChangeNotifier {
 
     await batch.commit();
     return true;
+  }
+
+  /// Cancel a pending or approved borrow request
+  Future<void> cancelRequest(String requestId, String listingId) async {
+    if (!_isInitialized) return;
+
+    final batch = firestore!.batch();
+    batch.update(firestore!.collection('borrow_requests').doc(requestId), {
+      'status': RequestStatus.cancelled.name,
+      'handoverQrToken': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    if (listingId.isNotEmpty) {
+      batch.update(firestore!.collection('items').doc(listingId), {
+        'availability': ItemAvailability.available.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+  }
+
+  // ===========================================================================
+  // FIRESTORE: REVIEWS & REPUTATION
+  // ===========================================================================
+
+  /// Create a new peer review and update user's reputation score
+  Future<void> createReview({
+    required String transactionId,
+    required String reviewerId,
+    required String reviewerName,
+    String? reviewerAvatarUrl,
+    required String targetUserId,
+    required double rating,
+    required String comment,
+    required String itemTitle,
+  }) async {
+    if (!_isInitialized) return;
+
+    final reviewRef = firestore!.collection('reviews').doc();
+    final batch = firestore!.batch();
+
+    batch.set(reviewRef, {
+      'transactionId': transactionId,
+      'reviewerId': reviewerId,
+      'reviewerName': reviewerName,
+      'reviewerAvatarUrl': reviewerAvatarUrl,
+      'targetUserId': targetUserId,
+      'rating': rating,
+      'comment': comment,
+      'itemTitle': itemTitle,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final userRef = firestore!.collection('users').doc(targetUserId);
+    final userDoc = await userRef.get();
+    if (userDoc.exists && userDoc.data() != null) {
+      final currentRating =
+          (userDoc.data()!['rating'] as num?)?.toDouble() ?? 5.0;
+      final currentCount =
+          (userDoc.data()!['reviewCount'] as num?)?.toInt() ?? 0;
+      final newCount = currentCount + 1;
+      final newRating =
+          ((currentRating * currentCount) + rating) / newCount;
+
+      batch.update(userRef, {
+        'rating': double.parse(newRating.toStringAsFixed(1)),
+        'reviewCount': newCount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+  }
+
+  /// Stream reviews left for a specific user
+  Stream<List<Review>> streamReviewsForUser(String userId) {
+    if (!_isInitialized || userId.isEmpty) return const Stream.empty();
+
+    return firestore!
+        .collection('reviews')
+        .where('targetUserId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final d = doc.data();
+        return Review(
+          id: doc.id,
+          transactionId: d['transactionId'] ?? '',
+          reviewerId: d['reviewerId'] ?? '',
+          reviewerName: d['reviewerName'] ?? 'Peer',
+          reviewerAvatarUrl: d['reviewerAvatarUrl'],
+          targetUserId: d['targetUserId'] ?? '',
+          rating: (d['rating'] as num?)?.toDouble() ?? 5.0,
+          comment: d['comment'] ?? '',
+          createdAt:
+              (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          itemTitle: d['itemTitle'] ?? 'Shared Item',
+        );
+      }).toList();
+    });
   }
 
   // ===========================================================================

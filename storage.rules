@@ -8,19 +8,63 @@ service firebase.storage {
 
     function isImage() {
       return request.resource.contentType.matches('image/.*')
-        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+        && request.resource.size <= 10 * 1024 * 1024; // 10MB max limit before compression
     }
 
-    // Item Photos
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+      );
+    }
+
+    function isItemOwner(itemId) {
+      return isAuthenticated() && (
+        (firestore.exists(/databases/(default)/documents/items/$(itemId)) &&
+         firestore.get(/databases/(default)/documents/items/$(itemId)).data.ownerId == request.auth.uid) ||
+        (resource != null && resource.metadata != null && resource.metadata.userId == request.auth.uid)
+      );
+    }
+
+    // Product Images under user namespace: users/{userId}/items/{itemId}/images/{imageId}
+    // Primary storage path in BorrowBox: strictly user-scoped
+    match /users/{userId}/items/{itemId}/images/{imageId} {
+      allow read: if true; // Publicly viewable in marketplace discovery
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isImage();
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Direct item images fallback: items/{itemId}/{fileName}
+    // Strictly hardened: only the item owner in Firestore/metadata or platform admin can write/delete
+    match /items/{itemId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        isItemOwner(itemId) ||
+        (request.resource.metadata != null && request.resource.metadata.userId == request.auth.uid) ||
+        isAdmin()
+      ) && isImage();
+      allow delete: if isAuthenticated() && (isItemOwner(itemId) || isAdmin());
+    }
+
+    // Legacy namespace: borrowbox_images/{itemId}/{fileName}
+    // Strictly hardened: only the item owner in Firestore/metadata or platform admin can write/delete
     match /borrowbox_images/{itemId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isImage();
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        isItemOwner(itemId) ||
+        (request.resource.metadata != null && request.resource.metadata.userId == request.auth.uid) ||
+        isAdmin()
+      ) && isImage();
+      allow delete: if isAuthenticated() && (isItemOwner(itemId) || isAdmin());
     }
 
-    // User Profile Avatars
+    // User Profile Avatars: avatars/{userId}/{fileName}
     match /avatars/{userId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId && isImage();
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isImage();
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
   }
 }
+

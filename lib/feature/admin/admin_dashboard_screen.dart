@@ -686,6 +686,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
         return const Color(0xFFF59E0B);
       case ItemAvailability.borrowed:
         return const Color(0xFF00E5FF);
+      case ItemAvailability.deactivated:
+        return Colors.grey;
     }
   }
 

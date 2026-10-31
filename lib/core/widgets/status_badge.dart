@@ -126,6 +126,11 @@ class StatusBadge extends StatelessWidget {
         fg = Colors.grey[700]!;
         label = "Borrowed";
         break;
+      case ItemAvailability.deactivated:
+        bg = Colors.blueGrey.withAlpha(35);
+        fg = Colors.blueGrey[700]!;
+        label = "Paused";
+        break;
     }
 
     return Container(

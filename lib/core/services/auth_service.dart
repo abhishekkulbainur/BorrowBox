@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 // Project Imports
 import 'package:lendnborrow/core/models/user_profile.dart';
 import 'package:lendnborrow/core/services/firebase_service.dart';
+import 'package:lendnborrow/core/services/chat_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/notification_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
@@ -66,11 +67,13 @@ class AuthService extends ChangeNotifier {
     MarketplaceService().initSync();
     TransactionService().initSync(userId);
     NotificationService().initSync(userId);
+    ChatService().initSync(userId);
   }
 
   void _clearUserServices() {
     TransactionService().disposeSync();
     NotificationService().disposeSync();
+    ChatService().disposeSync();
   }
 
   /// Genuine sign in with email and password via Firebase Authentication
@@ -203,6 +206,29 @@ class AuthService extends ChangeNotifier {
         }
       }
     }
+  }
+
+  /// Permanently delete account and associated user data
+  Future<bool> deleteAccount() async {
+    final uid = _currentUser?.id;
+    bool success = true;
+    if (FirebaseService().isInitialized && uid != null) {
+      try {
+        final firestore = FirebaseService().firestore;
+        if (firestore != null) {
+          await firestore.collection('users').doc(uid).delete();
+        }
+        final user = FirebaseService().auth?.currentUser;
+        if (user != null) {
+          await user.delete();
+        }
+      } catch (e) {
+        debugPrint("Error deleting account in Firebase: $e");
+        success = false;
+      }
+    }
+    signOut();
+    return success;
   }
 }
 

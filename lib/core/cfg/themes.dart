@@ -1,43 +1,59 @@
 // Flutter Imports
 import "package:flutter/cupertino.dart";
+import "package:flutter/material.dart";
 
 // Package Imports
 import "package:flex_color_scheme/flex_color_scheme.dart";
 
 final light = FlexThemeData.light(
-  // Using FlexColorScheme built-in FlexScheme enum based colors
   scheme: FlexScheme.deepBlue,
-  // Component theme configurations for light mode.
   subThemesData: const FlexSubThemesData(
     interactionEffects: true,
     tintedDisabledControls: true,
-    useM2StyleDividerInM3: true,
+    useM2StyleDividerInM3: false,
     inputDecoratorIsFilled: true,
     inputDecoratorBorderType: FlexInputBorderType.outline,
     alignedDropdown: true,
     navigationRailUseIndicator: true,
+    navigationBarElevation: 0,
+    navigationBarMutedUnselectedIcon: true,
+    bottomSheetElevation: 0,
+    cardElevation: 0,
   ),
-  // Direct ThemeData properties.
-  visualDensity: FlexColorScheme.comfortablePlatformDensity,
+  visualDensity: VisualDensity.standard,
   cupertinoOverrideTheme: const CupertinoThemeData(applyThemeToAll: true),
+).copyWith(
+  appBarTheme: const AppBarTheme(elevation: 0, scrolledUnderElevation: 0),
+  cardTheme: const CardThemeData(elevation: 0),
+  dividerTheme: const DividerThemeData(
+    space: 1,
+    thickness: 1,
+  ),
 );
 
-// The FlexColorScheme defined dark mode ThemeData.
 final dark = FlexThemeData.dark(
-  // Using FlexColorScheme built-in FlexScheme enum based colors.
   scheme: FlexScheme.deepBlue,
-  // Component theme configurations for dark mode.
   subThemesData: const FlexSubThemesData(
     interactionEffects: true,
     tintedDisabledControls: true,
     blendOnColors: true,
-    useM2StyleDividerInM3: true,
+    useM2StyleDividerInM3: false,
     inputDecoratorIsFilled: true,
     inputDecoratorBorderType: FlexInputBorderType.outline,
     alignedDropdown: true,
     navigationRailUseIndicator: true,
+    navigationBarElevation: 0,
+    navigationBarMutedUnselectedIcon: true,
+    bottomSheetElevation: 0,
+    cardElevation: 0,
   ),
-  // Direct ThemeData properties.
-  visualDensity: FlexColorScheme.comfortablePlatformDensity,
+  visualDensity: VisualDensity.standard,
   cupertinoOverrideTheme: const CupertinoThemeData(applyThemeToAll: true),
+).copyWith(
+  appBarTheme: const AppBarTheme(elevation: 0, scrolledUnderElevation: 0),
+  cardTheme: const CardThemeData(elevation: 0),
+  dividerTheme: const DividerThemeData(
+    space: 1,
+    thickness: 1,
+  ),
 );

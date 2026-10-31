@@ -5,19 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:intl/intl.dart';
+
 // Project Imports
 import 'package:lendnborrow/core/models/user_profile.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/services/chat_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
 import 'package:lendnborrow/core/widgets/app_logo.dart';
-import 'package:lendnborrow/core/widgets/empty_state_view.dart';
-import 'package:lendnborrow/core/widgets/status_badge.dart';
 import 'package:lendnborrow/feature/admin/admin_dashboard_screen.dart';
 import 'package:lendnborrow/feature/auth/auth_screen.dart';
-import 'package:lendnborrow/feature/explore/item_details_screen.dart';
+import 'package:lendnborrow/feature/chat/conversations_screen.dart';
 import 'package:lendnborrow/feature/history/history_screen.dart';
 import 'package:lendnborrow/feature/settings/settings_screen.dart';
+import 'package:lendnborrow/feature/support/support_screen.dart';
+import 'package:lendnborrow/feature/wishlist/wishlist_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -209,6 +212,34 @@ class ProfileScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
+                          currentUser.isVerified
+                              ? Icons.verified_user
+                              : Icons.mark_email_unread_outlined,
+                          size: 14,
+                          color: currentUser.isVerified
+                              ? Colors.green
+                              : Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          currentUser.isVerified
+                              ? "Verified Email Account"
+                              : "Email Verification Pending",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: currentUser.isVerified
+                                ? Colors.green
+                                : Colors.amber,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
                           Symbols.location_on,
                           size: 14,
                           color: theme.colorScheme.outline,
@@ -218,7 +249,20 @@ class ProfileScreen extends ConsumerWidget {
                           currentUser.location,
                           style: TextStyle(
                             color: theme.colorScheme.outline,
-                            fontSize: 13,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "•",
+                          style: TextStyle(color: theme.colorScheme.outline),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Member since ${DateFormat.yMMMd().format(currentUser.createdAt)}",
+                          style: TextStyle(
+                            color: theme.colorScheme.outline,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -341,6 +385,57 @@ class ProfileScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   ListTile(
+                    leading: Badge(
+                      isLabelVisible:
+                          ref.watch(unreadMessagesCountProvider) > 0,
+                      label: Text("${ref.watch(unreadMessagesCountProvider)}"),
+                      child: const Icon(Symbols.chat_bubble_outline),
+                    ),
+                    title: const Text("In-App Messages & Chat"),
+                    subtitle: const Text(
+                      "Chat with peers about item handovers & returns",
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ConversationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Symbols.favorite),
+                    title: const Text("Saved Favorites"),
+                    subtitle: Text("$favoriteCount items in wishlist"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const WishlistScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Symbols.help_outline),
+                    title: const Text("Help, FAQ & Support"),
+                    subtitle: const Text(
+                      "Community guidelines, FAQs, and ticket desk",
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SupportScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Symbols.history),
                     title: const Text("Completed History Archive"),
                     subtitle: const Text(
@@ -357,18 +452,10 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Symbols.favorite),
-                    title: const Text("Saved Favorites"),
-                    subtitle: Text("$favoriteCount items saved"),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showFavoritesSheet(context, marketplace),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Symbols.backup),
-                    title: const Text("Database Backup & Data Privacy"),
+                    leading: const Icon(Symbols.settings),
+                    title: const Text("Settings & Data Privacy"),
                     subtitle: const Text(
-                      "Export/Import local SQLite backups natively",
+                      "Theme, backups, and app configurations",
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
@@ -381,16 +468,39 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Symbols.logout, color: Colors.red),
+                    leading: const Icon(Symbols.logout, color: Colors.orange),
                     title: const Text(
                       "Sign Out",
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: Colors.orange),
                     ),
                     subtitle: const Text("Exit active user session"),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       auth.signOut();
                     },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
+                      Symbols.delete_forever,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      "Delete Account",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      "Permanently remove your account and all data",
+                      style: TextStyle(color: Colors.redAccent, fontSize: 11),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: Colors.red,
+                    ),
+                    onTap: () => _confirmDeleteAccount(context, auth),
                   ),
                 ],
               ),
@@ -628,121 +738,49 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showFavoritesSheet(
+  Future<void> _confirmDeleteAccount(
     BuildContext context,
-    MarketplaceService marketplace,
-  ) {
-    final favorites = marketplace.getFavoriteItems();
-    final theme = Theme.of(context);
-
-    showModalBottomSheet(
+    AuthService auth,
+  ) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, scrollController) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite, color: Colors.red, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Saved Favorites (${favorites.length})",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(ctx).pop(),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: favorites.isEmpty
-                    ? const EmptyStateView(
-                        icon: Symbols.favorite_border,
-                        title: "No Saved Favorites",
-                        message:
-                            "Tap the heart icon on any marketplace item to save it here for quick access.",
-                      )
-                    : ListView.separated(
-                        controller: scrollController,
-                        itemCount: favorites.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final item = favorites[index];
-                          return ListTile(
-                            tileColor: theme.colorScheme.surfaceContainerHighest
-                                .withAlpha(40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer
-                                    .withAlpha(80),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Symbols.category,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            title: Text(
-                              item.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              "${item.categoryDisplay} • ${item.pickupLocation}",
-                            ),
-                            trailing: StatusBadge.availability(
-                              item.availability,
-                            ),
-                            onTap: () {
-                              Navigator.of(ctx).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ItemDetailsScreen(item: item),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Account?"),
+        content: const Text(
+          "Are you sure you want to permanently delete your BorrowBox account? "
+          "This action is irreversible and will remove all your listings, chat history, and ratings.",
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text("Cancel"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text("Permanently Delete"),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      final success = await auth.deleteAccount();
+      if (context.mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Account successfully deleted.")),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Failed to delete account in cloud."),
+            ),
+          );
+        }
+      }
+    }
   }
 }

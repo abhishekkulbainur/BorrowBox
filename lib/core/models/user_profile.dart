@@ -90,4 +90,7 @@ class UserProfile {
       isAdmin: map['isAdmin'] as bool? ?? false,
     );
   }
+
+  String get displayName => name;
+  DateTime get createdAt => joinedDate;
 }

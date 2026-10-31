@@ -8,11 +8,16 @@ import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/marketplace_item.dart';
+import 'package:lendnborrow/core/models/report_item.dart';
 import 'package:lendnborrow/core/services/auth_service.dart';
+import 'package:lendnborrow/core/services/chat_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
+import 'package:lendnborrow/core/widgets/product_image_view.dart';
 import 'package:lendnborrow/core/widgets/status_badge.dart';
 import 'package:lendnborrow/feature/auth/auth_screen.dart';
+import 'package:lendnborrow/feature/chat/chat_screen.dart';
+import 'package:lendnborrow/feature/explore/edit_listing_screen.dart';
 
 class ItemDetailsScreen extends ConsumerStatefulWidget {
   final MarketplaceItem item;
@@ -52,13 +57,31 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
       appBar: AppBar(
         title: Text(currentItem.title),
         actions: [
-          if (isMyItem)
+          if (isMyItem) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: "Edit Listing",
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditListingScreen(item: currentItem),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               tooltip: "Delete Listing",
               onPressed: () =>
                   _confirmDeleteListing(context, currentItem, currentUser?.id),
             ),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline),
+              tooltip: "Chat with Owner",
+              onPressed: () => _openChatWithOwner(context, currentItem),
+            ),
+          ],
           IconButton(
             icon: Icon(
               currentItem.isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -70,15 +93,42 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   .toggleFavorite(currentItem.id);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Listing link copied to clipboard"),
-                ),
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (val) {
+              if (val == "share") {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Listing link copied to clipboard"),
+                  ),
+                );
+              } else if (val == "report") {
+                _showReportListingDialog(context, currentItem);
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: "share",
+                child: Row(
+                  children: [
+                    Icon(Icons.share_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text("Share Listing"),
+                  ],
+                ),
+              ),
+              if (!isMyItem)
+                const PopupMenuItem(
+                  value: "report",
+                  child: Row(
+                    children: [
+                      Icon(Icons.flag_outlined, size: 18, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text("Report Listing"),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -87,13 +137,12 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(15),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
+            border: Border(
+              top: BorderSide(
+                color: theme.colorScheme.outlineVariant.withAlpha(60),
+                width: 1,
               ),
-            ],
+            ),
           ),
           child: Row(
             children: [
@@ -122,42 +171,56 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               ),
               const Spacer(),
               if (isMyItem)
-                OutlinedButton.icon(
+                FilledButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("You are the owner of this listing."),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => EditListingScreen(item: currentItem),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.person),
-                  label: const Text("My Listing"),
+                  icon: const Icon(Icons.edit),
+                  label: const Text("Edit Listing"),
                 )
               else
-                FilledButton.icon(
-                  onPressed:
-                      currentItem.availability == ItemAvailability.available
-                      ? () {
-                          if (currentUser == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Please sign in or register to borrow items.",
-                                ),
-                              ),
-                            );
-                            Navigator.of(context).pushNamed(AuthScreen.path);
-                            return;
-                          }
-                          _showRequestBottomSheet(context, currentItem);
-                        }
-                      : null,
-                  icon: const Icon(Icons.send),
-                  label: Text(
-                    currentItem.availability == ItemAvailability.available
-                        ? "Request to Borrow"
-                        : "Currently Unavailable",
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      tooltip: "Chat with Owner",
+                      onPressed: () => _openChatWithOwner(context, currentItem),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: (currentItem.availability ==
+                                  ItemAvailability.available &&
+                              currentItem.isActive)
+                          ? () {
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Please sign in or register to borrow items.",
+                                    ),
+                                  ),
+                                );
+                                Navigator.of(context).pushNamed(AuthScreen.path);
+                                return;
+                              }
+                              _showRequestBottomSheet(context, currentItem);
+                            }
+                          : null,
+                      icon: const Icon(Icons.send),
+                      label: Text(
+                        currentItem.availability ==
+                                    ItemAvailability.available &&
+                                currentItem.isActive
+                            ? "Request to Borrow"
+                            : "Unavailable",
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -167,18 +230,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero Item Icon Banner
-            Container(
-              height: 200,
-              width: double.infinity,
-              color: theme.colorScheme.primaryContainer.withAlpha(40),
-              child: Center(
-                child: Icon(
-                  Symbols.category,
-                  size: 72,
-                  color: theme.colorScheme.primary.withAlpha(160),
-                ),
-              ),
+            // Swipeable Product Image Gallery with indicators and zoom
+            ProductImageGallery(
+              imageUrls: currentItem.photoUrls,
+              category: currentItem.category,
+              height: 250,
             ),
 
             Padding(
@@ -631,6 +687,149 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
             child: const Text("Delete"),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openChatWithOwner(BuildContext context, MarketplaceItem item) async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please sign in or register to chat with the owner."),
+        ),
+      );
+      Navigator.of(context).pushNamed(AuthScreen.path);
+      return;
+    }
+
+    final chatService = ref.read(chatServiceProvider);
+    final conv = await chatService.getOrCreateConversation(
+      myUserId: currentUser.id,
+      myName: currentUser.name,
+      myAvatar: currentUser.avatarUrl,
+      otherUserId: item.ownerId,
+      otherName: item.ownerName,
+      itemId: item.id,
+      itemTitle: item.title,
+      itemImageUrl: item.imageUrls.isNotEmpty ? item.imageUrls.first : null,
+    );
+
+    if (context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(conversation: conv),
+        ),
+      );
+    }
+  }
+
+  void _showReportListingDialog(
+    BuildContext context,
+    MarketplaceItem item,
+  ) {
+    final detailsController = TextEditingController();
+    String selectedReason = "Misleading description or fake item";
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Text("Report Listing"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Report \"${item.title}\" to BorrowBox safety team:",
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: selectedReason,
+                items: const [
+                  DropdownMenuItem(
+                    value: "Misleading description or fake item",
+                    child: Text("Misleading or Fake Item"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Damaged or non-functional item",
+                    child: Text("Damaged / Non-functional"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Prohibited or dangerous equipment",
+                    child: Text("Prohibited / Dangerous item"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Suspicious deposit demands",
+                    child: Text("Suspicious Deposit Demand"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Other",
+                    child: Text("Other Concern"),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) setDlgState(() => selectedReason = val);
+                },
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: detailsController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "Add specific details for moderation...",
+                  hintStyle: const TextStyle(fontSize: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final myUser = ref.read(currentUserProvider);
+                if (myUser != null) {
+                  final report = ReportItem(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    reporterId: myUser.id,
+                    reporterName: myUser.name,
+                    targetUserId: item.ownerId,
+                    targetListingId: item.id,
+                    targetListingTitle: item.title,
+                    reason: selectedReason,
+                    details: detailsController.text.trim(),
+                    createdAt: DateTime.now(),
+                  );
+                  await ref.read(chatServiceProvider).submitReport(report);
+                }
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Thank you. This listing was flagged for review.",
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Submit Report"),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import 'package:lendnborrow/core/services/auth_service.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
 import 'package:lendnborrow/core/services/notification_service.dart';
 import 'package:lendnborrow/core/services/transaction_service.dart';
+import 'package:lendnborrow/core/utils/responsive.dart';
 import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/item_card.dart';
 import 'package:lendnborrow/feature/explore/create_listing_screen.dart';
@@ -39,6 +40,7 @@ class HomeScreen extends ConsumerWidget {
     final featuredItems = marketplace.allItems.take(4).toList();
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -46,9 +48,9 @@ class HomeScreen extends ConsumerWidget {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
+            padding: Responsive.horizontalPadding(context).copyWith(
+              top: 12.0,
+              bottom: 24.0,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,12 +309,7 @@ class HomeScreen extends ConsumerWidget {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.72,
-                  ),
+                  gridDelegate: Responsive.gridDelegate(context),
                   itemCount: featuredItems.length,
                   itemBuilder: (context, index) {
                     final item = featuredItems[index];

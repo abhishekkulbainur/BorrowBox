@@ -9,12 +9,17 @@ enum ItemCategory {
   calculators,
   creative,
   games,
+  furniture,
+  gaming,
+  kitchen,
+  accessories,
+  educational,
   other,
 }
 
 enum ItemCondition { likeNew, excellent, good, fair }
 
-enum ItemAvailability { available, reserved, borrowed }
+enum ItemAvailability { available, reserved, borrowed, deactivated }
 
 class MarketplaceItem {
   final String id;
@@ -37,6 +42,7 @@ class MarketplaceItem {
   final String? communityName;
   final int favoriteCount;
   final bool isFavorite;
+  final bool isActive;
 
   const MarketplaceItem({
     required this.id,
@@ -59,6 +65,7 @@ class MarketplaceItem {
     this.communityName,
     this.favoriteCount = 0,
     this.isFavorite = false,
+    this.isActive = true,
   });
 
   MarketplaceItem copyWith({
@@ -77,6 +84,7 @@ class MarketplaceItem {
     String? communityName,
     int? favoriteCount,
     bool? isFavorite,
+    bool? isActive,
   }) {
     return MarketplaceItem(
       id: id ?? this.id,
@@ -99,6 +107,7 @@ class MarketplaceItem {
       communityName: communityName ?? this.communityName,
       favoriteCount: favoriteCount ?? this.favoriteCount,
       isFavorite: isFavorite ?? this.isFavorite,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -113,19 +122,29 @@ class MarketplaceItem {
       case ItemCategory.books:
         return "Books & Notes";
       case ItemCategory.sports:
-        return "Sports & Outdoors";
+        return "Sports Equipment";
       case ItemCategory.household:
         return "Household";
       case ItemCategory.travel:
         return "Travel & Camping";
       case ItemCategory.calculators:
-        return "Scientific Calculators";
+        return "Calculators";
       case ItemCategory.creative:
         return "Creative & Camera";
       case ItemCategory.games:
         return "Board Games";
+      case ItemCategory.furniture:
+        return "Furniture";
+      case ItemCategory.gaming:
+        return "Gaming & Consoles";
+      case ItemCategory.kitchen:
+        return "Kitchen Appliances";
+      case ItemCategory.accessories:
+        return "Accessories";
+      case ItemCategory.educational:
+        return "Educational Equipment";
       case ItemCategory.other:
-        return "General";
+        return "Others";
     }
   }
 
@@ -141,4 +160,11 @@ class MarketplaceItem {
         return "Fair";
     }
   }
+
+  List<String> get photoUrls => imageUrls;
+  bool get isFree => depositAmount == null || depositAmount == 0;
+  double? get rentalPricePerDay =>
+      depositAmount != null && depositAmount! > 0
+          ? (depositAmount! / 10.0)
+          : null;
 }

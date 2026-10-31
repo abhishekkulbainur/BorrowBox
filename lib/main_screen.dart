@@ -100,65 +100,62 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         lastBackPressTime = null;
         SystemNavigator.pop();
       },
-      child: SafeArea(
-        child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          key: scaffoldKey,
-          backgroundColor: surfaceDimColor(context),
-          body: PageView(
-            controller: pageController,
-            onPageChanged: (index) {
-              ref.read(currentTabIndexProvider.notifier).state = index;
-            },
-            children: const [
-              HomeScreen(),
-              ExploreScreen(),
-              ActivityScreen(),
-              CommunitiesScreen(),
-              ProfileScreen(),
-            ],
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: currentIndex,
-            selectedItemColor: primaryColor(context),
-            selectedIconTheme: IconThemeData(
-              color: secondaryColor(context),
-              size: 28,
-            ),
-            unselectedIconTheme: IconThemeData(
-              color: primaryColor(context),
-              size: 24,
-            ),
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            onTap: (index) {
-              ref.read(currentTabIndexProvider.notifier).state = index;
-            },
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Symbols.home), label: "Home"),
-              BottomNavigationBarItem(
-                icon: Icon(Symbols.search),
-                label: "Explore",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Symbols.swap_horiz),
-                label: "Activity",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Symbols.groups),
-                label: "Circles",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Symbols.person),
-                label: "Profile",
-              ),
-            ],
-            type: BottomNavigationBarType.fixed,
-          ),
-          floatingActionButton: displayAddItemButton
-              ? getAddItemButton(context, ref)
-              : null,
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        key: scaffoldKey,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: PageView(
+          controller: pageController,
+          onPageChanged: (index) {
+            ref.read(currentTabIndexProvider.notifier).state = index;
+          },
+          children: const [
+            HomeScreen(),
+            ExploreScreen(),
+            ActivityScreen(),
+            CommunitiesScreen(),
+            ProfileScreen(),
+          ],
         ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: currentIndex,
+          elevation: 0,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          onDestinationSelected: (index) {
+            ref.read(currentTabIndexProvider.notifier).state = index;
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Symbols.home),
+              selectedIcon: Icon(Symbols.home, fill: 1),
+              label: "Home",
+            ),
+            NavigationDestination(
+              icon: Icon(Symbols.search),
+              selectedIcon: Icon(Symbols.search, fill: 1),
+              label: "Explore",
+            ),
+            NavigationDestination(
+              icon: Icon(Symbols.swap_horiz),
+              selectedIcon: Icon(Symbols.swap_horiz, fill: 1),
+              label: "Activity",
+            ),
+            NavigationDestination(
+              icon: Icon(Symbols.groups),
+              selectedIcon: Icon(Symbols.groups, fill: 1),
+              label: "Circles",
+            ),
+            NavigationDestination(
+              icon: Icon(Symbols.person),
+              selectedIcon: Icon(Symbols.person, fill: 1),
+              label: "Profile",
+            ),
+          ],
+        ),
+        floatingActionButton: displayAddItemButton
+            ? getAddItemButton(context, ref)
+            : null,
       ),
     );
   }

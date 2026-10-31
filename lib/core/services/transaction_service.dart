@@ -389,6 +389,61 @@ class TransactionService extends ChangeNotifier {
     return true;
   }
 
+  // 3b. Cancel Request (Borrower cancels request before handover)
+  bool cancelRequest(String requestId, [String? actorId]) {
+    final index = _transactions.indexWhere((t) => t.id == requestId);
+    if (index == -1) return false;
+
+    final tx = _transactions[index];
+
+    // SECURITY: Only borrower can cancel, or owner if not yet active
+    if (actorId != null && tx.borrowerId != actorId && tx.ownerId != actorId) {
+      return false;
+    }
+
+    if (tx.status != RequestStatus.pending &&
+        tx.status != RequestStatus.handoverPending) {
+      return false;
+    }
+
+    _transactions[index] = tx.copyWith(
+      status: RequestStatus.cancelled,
+      clearHandoverToken: true,
+    );
+
+    // Revert item availability back to available if it was reserved
+    MarketplaceService().updateAvailability(
+      tx.listingId,
+      ItemAvailability.available,
+    );
+
+    // Notify owner if borrower cancelled
+    if (actorId == tx.borrowerId) {
+      NotificationService().addNotification(
+        AppNotification(
+          id: const Uuid().v4(),
+          userId: tx.ownerId,
+          title: "Borrow Request Cancelled",
+          message:
+              "${tx.borrowerName} cancelled their request for '${tx.itemTitle}'.",
+          type: NotificationType.requestRejected,
+          createdAt: DateTime.now(),
+          referenceId: tx.id,
+        ),
+      );
+    }
+
+    notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().cancelRequest(requestId, tx.listingId).catchError((e) {
+        debugPrint("Error cancelling request in Firebase: $e");
+      });
+    }
+
+    return true;
+  }
+
   // 4. Confirm Handover (transitions to active & burns the single-use token)
   bool confirmHandover(
     String requestId,
@@ -556,15 +611,16 @@ class TransactionService extends ChangeNotifier {
 
   // 7. Add Review
   bool addReview(Review review) {
-    // Check if transaction exists and is returned
+    // Check if transaction exists and if present ensure it is returned
     final tx = getRequestById(review.transactionId);
-    if (tx == null || tx.status != RequestStatus.returned) {
-      return false;
-    }
-
-    // SECURITY: Reviewer must be a transaction participant
-    if (review.reviewerId != tx.borrowerId && review.reviewerId != tx.ownerId) {
-      return false;
+    if (tx != null) {
+      if (tx.status != RequestStatus.returned) {
+        return false;
+      }
+      // SECURITY: Reviewer must be a transaction participant
+      if (review.reviewerId != tx.borrowerId && review.reviewerId != tx.ownerId) {
+        return false;
+      }
     }
 
     // SECURITY: No self reviews
@@ -584,6 +640,22 @@ class TransactionService extends ChangeNotifier {
 
     _reviews.insert(0, review);
     notifyListeners();
+
+    if (FirebaseService().isInitialized) {
+      FirebaseService().createReview(
+        transactionId: review.transactionId,
+        reviewerId: review.reviewerId,
+        reviewerName: review.reviewerName,
+        reviewerAvatarUrl: review.reviewerAvatarUrl,
+        targetUserId: review.targetUserId,
+        rating: review.rating,
+        comment: review.comment,
+        itemTitle: review.itemTitle,
+      ).catchError((e) {
+        debugPrint("Error publishing review to Firebase: $e");
+      });
+    }
+
     return true;
   }
 

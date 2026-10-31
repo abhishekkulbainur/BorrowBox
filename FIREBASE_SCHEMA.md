@@ -1,6 +1,6 @@
 # 📦 BorrowBox: Cloud Firestore Data Architecture & Security
 
-This document specifies the complete NoSQL schema, collection structure, and security rules for **BorrowBox** on **Google Firebase** (Cloud Firestore, Firebase Authentication, and Firebase Storage), replacing the Supabase PostgreSQL schema.
+This document specifies the complete NoSQL schema, collection structure, composite indexes, and security rules for **BorrowBox** on **Google Firebase** (Cloud Firestore, Firebase Authentication, and Firebase Storage).
 
 ---
 
@@ -10,13 +10,18 @@ This document specifies the complete NoSQL schema, collection structure, and sec
 firestore/
 ├── users/ {userId}
 │   ├── favorites/ {itemId}
+│   ├── blocked_users/ {blockedUserId}
 │   └── notifications/ {notificationId}
 ├── items/ {itemId}
 ├── borrow_requests/ {requestId}
 │   └── events/ {eventId}
+├── conversations/ {conversationId}
+│   └── messages/ {messageId}
+├── reviews/ {reviewId}
+├── reports/ {reportId}
+├── support_tickets/ {ticketId}
 ├── communities/ {communityId}
 │   └── members/ {memberId}
-├── reviews/ {reviewId}
 └── notifications/ {notificationId}  (top-level indexable)
 ```
 
@@ -37,7 +42,7 @@ firestore/
 | `reviewCount` | Number (int) | Total number of reviews received |
 | `completedLoans`| Number (int) | Successful lending/borrowing transactions completed |
 | `isVerified` | Boolean | Verification flag |
-| `isAdmin` | Boolean | Administrative privileges |
+| `isAdmin` | Boolean | Administrative privileges (protected by server rules) |
 | `createdAt` | Timestamp | Account creation date |
 | `updatedAt` | Timestamp | Last profile update date |
 
@@ -54,12 +59,14 @@ firestore/
 | `ownerRating` | Number | Cached owner rating |
 | `title` | String | Item title |
 | `description` | String | Detailed description |
-| `category` | String | `tools`, `electronics`, `books`, `sports`, `household`, `travel`, `calculators`, `creative`, `games`, `other` |
+| `category` | String | `electronics`, `books`, `tools`, `sports`, `furniture`, `gaming`, `kitchen`, `accessories`, `educational`, `other` |
 | `condition` | String | `like_new`, `excellent`, `good`, `fair` |
 | `pickupLocation`| String | Pick-up and handover point |
 | `maxDurationDays`| Number (int)| Maximum borrowing period allowed (e.g., 7) |
+| `rentalPricePerDay` | Number? | Optional daily rental rate (INR / Local) |
 | `depositAmount` | Number? | Optional refundable security deposit |
-| `availability` | String | `available`, `reserved`, `borrowed` |
+| `availability` | String | `available`, `reserved`, `borrowed`, `deactivated` |
+| `isActive` | Boolean | Owner active toggle (pause / resume) |
 | `imageUrls` | Array<String> | Firebase Storage URLs (`borrowbox_images/{itemId}/...`) |
 | `terms` | String? | Special lending condition / instructions |
 | `communityId` | String? | ID of community if scoped |
@@ -84,12 +91,13 @@ firestore/
 | `ownerName` | String | Cached owner display name |
 | `startDate` | Timestamp | Requested start date |
 | `endDate` | Timestamp | Requested return date |
-| `status` | String | `pending`, `approved`, `handover_pending`, `active`, `return_pending`, `returned`, `rejected`, `cancelled`, `overdue` |
+| `status` | String | `pending`, `approved`, `handover_pending`, `active`, `return_pending`, `returned`, `rejected`, `cancelled`, `disputed` |
 | `message` | String? | Borrower's request message |
 | `handoverQrToken`| String? | Cryptographic token for physical pickup verification |
 | `returnQrToken` | String? | Cryptographic token for return verification |
 | `notes` | String? | Private loan notes |
 | `depositAmount` | Number? | Applicable security deposit |
+| `rentalFee` | Number? | Total rental fee if applicable |
 | `createdAt` | Timestamp | Date request submitted |
 | `updatedAt` | Timestamp | Last state transition |
 
@@ -103,26 +111,50 @@ firestore/
 
 ---
 
-## 4. `communities` Collection
+## 4. `conversations` Collection
+*Document ID: Composite ID (e.g. `conv_${user1}_${user2}_${itemId}`)*
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | String | Unique conversation identifier |
+| `participants` | Array<String> | UIDs of both peer users |
+| `participantNames` | Map<String, String> | Map of user UID to display name |
+| `participantAvatars`| Map<String, String?> | Map of user UID to avatar URL |
+| `itemId` | String | Marketplace item context |
+| `itemTitle` | String | Marketplace item title |
+| `lastMessage` | String | Snippet of latest message |
+| `lastMessageTime` | Timestamp | Timestamp of latest message |
+| `unreadCounts` | Map<String, int> | Unread message counter per UID |
+
+### Subcollection: `conversations/{conversationId}/messages/{messageId}`
+- `id`: String
+- `conversationId`: String
+- `senderId`: String
+- `senderName`: String
+- `text`: String
+- `imageUrl`: String?
+- `timestamp`: Timestamp
+- `isRead`: Boolean
+
+---
+
+## 5. `reports` Collection
 *Document ID: Unique ID*
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | String | Community identifier |
-| `name` | String | Community name |
-| `description` | String | Description / purpose |
-| `type` | String | `apartment`, `neighborhood`, `college`, `hobby`, `general` |
-| `location` | String | Geographical locality |
-| `memberCount` | Number (int) | Total joined members |
-| `activeItemsCount`| Number (int)| Active listings in community |
-| `isPrivate` | Boolean | Invite-only or open |
-| `icon` | String | Material icon identifier |
-| `createdBy` | String | UID of creator |
-| `createdAt` | Timestamp | Creation date |
+| `id` | String | Report ID |
+| `reporterId` | String | UID of user filing the report |
+| `targetId` | String | ID of reported item or user |
+| `type` | String | `item` or `user` |
+| `reason` | String | Reason code |
+| `details` | String | Additional context / description |
+| `status` | String | `pending`, `reviewed`, `dismissed`, `action_taken` |
+| `createdAt` | Timestamp | Timestamp report filed |
 
 ---
 
-## 5. `reviews` Collection
+## 6. `reviews` Collection
 *Document ID: Unique ID*
 
 | Field | Type | Description |
@@ -131,14 +163,16 @@ firestore/
 | `transactionId` | String | Associated `borrow_requests` ID |
 | `reviewerId` | String | UID of user leaving the review |
 | `reviewerName` | String | Display name of reviewer |
+| `reviewerAvatarUrl` | String? | Avatar URL of reviewer |
 | `targetUserId` | String | UID of user being reviewed (Owner or Borrower) |
-| `rating` | Number (int) | Star rating (1 to 5) |
+| `rating` | Number (double) | Star rating (1.0 to 5.0) |
 | `comment` | String | Review feedback |
+| `itemTitle` | String | Item title for transaction context |
 | `createdAt` | Timestamp | Review submission timestamp |
 
 ---
 
-## 6. `notifications` Collection
+## 7. `notifications` Collection
 *Document ID: Unique ID*
 
 | Field | Type | Description |
@@ -147,14 +181,115 @@ firestore/
 | `userId` | String | Target recipient UID |
 | `title` | String | Title header |
 | `message` | String | Message body |
-| `type` | String | `requestReceived`, `requestApproved`, `handoverReady`, `itemBorrowed`, `returnPending`, `itemReturned`, `reviewReceived` |
+| `type` | String | `borrowRequest`, `requestApproved`, `requestRejected`, `handoverReady`, `returnReminder`, `itemReturned`, `systemAlert` |
 | `isRead` | Boolean | Read status |
 | `referenceId` | String? | Linked Request/Item ID |
 | `createdAt` | Timestamp | Sent timestamp |
 
 ---
 
-## 7. 🗄️ Firebase Storage Buckets Structure
+## 8. Required Composite Indexes (`firestore.indexes.json`)
 
-- `borrowbox_images/{itemId}/{fileName}.jpg`: Item listing photos (Max 5MB each).
-- `avatars/{userId}/{fileName}.jpg`: User profile avatar images.
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "borrow_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "borrowerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "borrow_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participants", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "lastMessageTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "conversationId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetUserId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 9. 🗄️ Firebase Storage Buckets Architecture
+
+BorrowBox employs an authenticated, user-namespaced storage topology that guarantees complete ownership boundaries and prevents unauthorized asset tampering or orphan file accumulation.
+
+### Storage Paths
+```
+storage/
+├── users/ {userId}/
+│   └── items/ {itemId}/
+│       └── images/ {imageId}.jpg    # Production product photographs (up to 5 per item)
+├── items/ {itemId}/
+│   └── {imageId}.jpg                # Direct item reference fallback
+├── avatars/ {userId}/
+│   └── {fileName}.jpg               # User profile avatar photos
+└── chat_attachments/ {conversationId}/
+    └── {fileName}.jpg               # Direct 1-to-1 conversation media attachments
+```
+
+### Image Pipeline & Performance Constraints
+1. **Format Validation**: Strict validation for `.jpg`, `.jpeg`, `.png`, and `.webp`.
+2. **File Size Limit**: Max 10MB input file size enforced by client validation and Cloud Storage security rules (`request.resource.size <= 10 * 1024 * 1024`).
+3. **Pre-Upload Compression**:
+   - Engine: `flutter_image_compress`
+   - Resolution Cap: 1280 x 1280 logical pixels (ideal for high-density mobile displays while avoiding waste).
+   - Target Quality: 80% JPEG.
+   - Resulting Payload: ~150KB - 350KB per photo (down from original 5MB - 12MB photos).
+4. **Client-Side Image Caching**:
+   - Library: `cached_network_image` with local disk persistence and memory constraints (`memCacheWidth: 600`).
+   - Placeholder: Subtle shimmer/tonal surface container with category icon fallback.
+   - Interactive zoom: `InteractiveViewer` with 0.8x to 4.0x pinch-to-zoom for detailed condition inspection.
+5. **Deletion & Garbage Collection**:
+   - When an item listing is deleted by its owner or admin, `StorageService.deleteItemImages` automatically deletes all associated Storage blobs.
+6. **Hardened Storage Security Rules**:
+   - Primary `users/{userId}/...` path: strictly enforces `request.auth.uid == userId` or `isAdmin()`.
+   - Fallback `items/{itemId}/...` & `borrowbox_images/{itemId}/...` paths: strictly requires Firestore item ownership verification (`firestore.get(/databases/(default)/documents/items/$(itemId)).data.ownerId == request.auth.uid`), upload metadata validation (`metadata.userId == request.auth.uid`), or platform administrator privileges. Unauthenticated or non-owner deletions and overwrites are strictly rejected.
+

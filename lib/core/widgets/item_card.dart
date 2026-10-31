@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 // Project Imports
 import 'package:lendnborrow/core/models/marketplace_item.dart';
+import 'package:lendnborrow/core/widgets/product_image_view.dart';
 import 'package:lendnborrow/core/widgets/status_badge.dart';
 
 class ItemCard extends StatelessWidget {
@@ -20,61 +21,45 @@ class ItemCard extends StatelessWidget {
     this.onFavoriteToggle,
   });
 
-  IconData _getCategoryIcon(ItemCategory category) {
-    switch (category) {
-      case ItemCategory.tools:
-        return Symbols.build;
-      case ItemCategory.electronics:
-        return Symbols.devices;
-      case ItemCategory.books:
-        return Symbols.menu_book;
-      case ItemCategory.sports:
-        return Symbols.sports_tennis;
-      case ItemCategory.household:
-        return Symbols.home;
-      case ItemCategory.travel:
-        return Symbols.camping;
-      case ItemCategory.calculators:
-        return Symbols.calculate;
-      case ItemCategory.creative:
-        return Symbols.photo_camera;
-      case ItemCategory.games:
-        return Symbols.casino;
-      default:
-        return Symbols.category;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      elevation: 0.5,
+      elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withAlpha(60),
+          width: 1,
+        ),
       ),
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Top Image/Icon Placeholder banner
-            Container(
-              height: 120,
+            // Top Product Image Banner with badges
+            SizedBox(
+              height: 116,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withAlpha(40),
-              ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      _getCategoryIcon(item.category),
-                      size: 48,
-                      color: theme.colorScheme.primary.withAlpha(180),
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(15),
+                      ),
+                      child: ProductImageView(
+                        imageUrl: item.photoUrls.isNotEmpty
+                            ? item.photoUrls.first
+                            : null,
+                        category: item.category,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -86,32 +71,48 @@ class ItemCard extends StatelessWidget {
                     Positioned(
                       top: 4,
                       right: 4,
-                      child: IconButton(
-                        icon: Icon(
-                          item.isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: item.isFavorite
-                              ? Colors.red
-                              : theme.colorScheme.onSurfaceVariant,
-                          size: 22,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(60),
+                          shape: BoxShape.circle,
                         ),
-                        onPressed: onFavoriteToggle,
+                        child: IconButton(
+                          icon: Icon(
+                            item.isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: item.isFavorite ? Colors.red : Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: onFavoriteToggle,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
+
+            // Content details
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
+                    runSpacing: 4,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 5,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -121,39 +122,40 @@ class ItemCard extends StatelessWidget {
                         child: Text(
                           item.categoryDisplay,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 9.0,
                             fontWeight: FontWeight.w600,
                             color: theme.colorScheme.primary,
                           ),
                         ),
                       ),
-                      const Spacer(),
                       StatusBadge.condition(item.condition),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     item.title,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(
                         Symbols.location_on,
-                        size: 14,
+                        size: 13,
                         color: theme.colorScheme.outline,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 3),
                       Expanded(
                         child: Text(
                           item.pickupLocation,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.outline,
+                            fontSize: 11,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -162,13 +164,16 @@ class ItemCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
+                    runSpacing: 2,
                     children: [
                       Text(
-                        "Up to ${item.maxDurationDays} days",
+                        "Up to ${item.maxDurationDays}d",
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w500,
                           color: theme.colorScheme.secondary,
                         ),
@@ -177,7 +182,7 @@ class ItemCard extends StatelessWidget {
                         Text(
                           "₹${item.depositAmount!.toInt()} dep.",
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             color: theme.colorScheme.outline,
                           ),
                         )
@@ -185,7 +190,7 @@ class ItemCard extends StatelessWidget {
                         Text(
                           "Free loan",
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: Colors.green[700],
                           ),

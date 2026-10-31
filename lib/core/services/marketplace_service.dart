@@ -314,6 +314,80 @@ class MarketplaceService extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateListing(
+    dynamic itemOrId, {
+    String? actorId,
+    String? title,
+    String? description,
+    ItemCategory? category,
+    ItemCondition? condition,
+    String? pickupLocation,
+    int? maxDurationDays,
+    double? depositAmount,
+    List<String>? imageUrls,
+    String? terms,
+  }) async {
+    if (itemOrId is MarketplaceItem) {
+      final index = _items.indexWhere((i) => i.id == itemOrId.id);
+      if (index != -1) {
+        _items[index] = itemOrId;
+        notifyListeners();
+
+        if (FirebaseService().isInitialized) {
+          await FirebaseService().updateItemListing(itemOrId).catchError((e) {
+            debugPrint("Error updating item listing in Firebase: $e");
+          });
+        }
+        return true;
+      }
+      return false;
+    } else if (itemOrId is String) {
+      final item = getItemById(itemOrId);
+      if (item == null) return false;
+      if (actorId != null && item.ownerId != actorId) {
+        return false;
+      }
+      final updated = item.copyWith(
+        title: title ?? item.title,
+        description: description ?? item.description,
+        category: category ?? item.category,
+        condition: condition ?? item.condition,
+        pickupLocation: pickupLocation ?? item.pickupLocation,
+        maxDurationDays: maxDurationDays ?? item.maxDurationDays,
+        depositAmount: depositAmount ?? item.depositAmount,
+        imageUrls: imageUrls ?? item.imageUrls,
+        terms: terms ?? item.terms,
+      );
+      return await updateListing(updated);
+    }
+    return false;
+  }
+
+  Future<bool> toggleListingActive(String itemId, [bool? desiredActive]) async {
+    final index = _items.indexWhere((i) => i.id == itemId);
+    if (index != -1) {
+      final current = _items[index];
+      final newActive = desiredActive ?? !current.isActive;
+      final newAvail = newActive
+          ? ItemAvailability.available
+          : ItemAvailability.deactivated;
+      final updated = current.copyWith(
+        isActive: newActive,
+        availability: newAvail,
+      );
+      _items[index] = updated;
+      notifyListeners();
+
+      if (FirebaseService().isInitialized) {
+        await FirebaseService().updateItemListing(updated).catchError((e) {
+          debugPrint("Error updating item active state: $e");
+        });
+      }
+      return true;
+    }
+    return false;
+  }
+
   bool deleteListing(String itemId, {String? actorId}) {
     final item = getItemById(itemId);
     if (item == null) return false;

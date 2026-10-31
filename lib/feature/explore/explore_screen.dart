@@ -8,6 +8,7 @@ import 'package:material_symbols_icons/symbols.dart';
 // Project Imports
 import 'package:lendnborrow/core/models/marketplace_item.dart';
 import 'package:lendnborrow/core/services/marketplace_service.dart';
+import 'package:lendnborrow/core/utils/responsive.dart';
 import 'package:lendnborrow/core/widgets/app_logo.dart';
 import 'package:lendnborrow/core/widgets/empty_state_view.dart';
 import 'package:lendnborrow/core/widgets/item_card.dart';
@@ -170,13 +171,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       bottom: 80,
                       top: 8,
                     ),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.72,
-                        ),
+                    gridDelegate: Responsive.gridDelegate(context),
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
@@ -226,6 +221,16 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         return "Creative";
       case ItemCategory.games:
         return "Games";
+      case ItemCategory.furniture:
+        return "Furniture";
+      case ItemCategory.gaming:
+        return "Gaming";
+      case ItemCategory.kitchen:
+        return "Kitchen";
+      case ItemCategory.accessories:
+        return "Accessories";
+      case ItemCategory.educational:
+        return "Educational";
       case ItemCategory.other:
         return "General";
     }
