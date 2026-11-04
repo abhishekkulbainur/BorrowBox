@@ -1,0 +1,7 @@
+# Keystore properties for release signing
+# Place your release keystore in android/app/ or specify its relative path
+storePassword=BorrowBox@2026Release
+keyPassword=BorrowBox@2026Release
+keyAlias=borrowbox
+storeFile=borrowbox-release.jks
+

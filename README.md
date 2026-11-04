@@ -29,21 +29,15 @@ BorrowBox aims to provide a simpler alternative:
 
 **Our philosophy:** Your lending records belong to you.
 
-## 🔒 Privacy & Offline Guarantees
+## 🔒 Privacy & Offline-First Guarantees
 
-BorrowBox is designed around privacy and local data ownership.
+BorrowBox is designed around user privacy and resilient local data ownership.
 
-- **No accounts required.**
-- **No data tracking or analytics.**
-- **No advertisements.**
-- **No telemetry.**
-- **No Google Play Services or Firebase dependency.**
-- **No internet permission or network dependency.**
-- **Local data storage:** Records remain on the device.
-- **User-controlled backups:** Data leaves the device only when you explicitly export a backup.
-- **No hidden background jobs or remote configuration.**
-
-The application is intended to function fully offline, without relying on cloud services.
+- **Offline-First:** Core records are stored locally on your device in SQLite.
+- **Optional Cloud Sync:** Powered by Firebase Authentication, Cloud Firestore, and Firebase Storage for real-time backup and multi-device access when connected.
+- **No Advertisements or Third-Party Ad Trackers.**
+- **User-Controlled Backups:** Export and import local SQLite backups through Android's Storage Access Framework.
+- **Secure Release Builds:** Production APKs are signed with APK Signature Scheme v2 & v3, targeting Android 15 (API 35) with broad backward compatibility (Android 7.0+ / API 24).
 
 ## 🛠️ Technology Stack
 
@@ -90,7 +84,7 @@ All personal lending records are managed locally. The application does not depen
 1. Clone the repository:
 
    ```bash
-   git clone <YOUR_REPOSITORY_URL>
+   git clone https://github.com/abhishekkulbainur/BorrowBox.git
    ```
 
 2. Navigate to the project directory:
@@ -111,7 +105,29 @@ All personal lending records are managed locally. The application does not depen
    flutter run
    ```
 
-Replace `<YOUR_REPOSITORY_URL>` with the actual Git repository URL. If your repository uses a different directory name, navigate to that directory instead.
+## 📱 Building Release APK
+
+To generate a production-ready, signed release APK:
+
+1. Configure keystore properties in `android/key.properties` (see `android/key.properties.example` for reference):
+   ```properties
+   storePassword=<YOUR_STORE_PASSWORD>
+   keyPassword=<YOUR_KEY_PASSWORD>
+   keyAlias=<YOUR_KEY_ALIAS>
+   storeFile=<PATH_TO_KEYSTORE_FILE>
+   ```
+
+2. Build the release APK:
+   ```bash
+   flutter build apk --release
+   ```
+
+3. The generated release APK will be located at:
+   ```
+   build/app/outputs/flutter-apk/app-release.apk
+   ```
+
+> **Note on Device Installation:** If you previously had a debug build installed on your device (e.g. from `flutter run`), uninstall it before installing the signed release APK, as Android enforces cryptographic signature consistency for package updates.
 
 ## 📦 Backup & Restore
 

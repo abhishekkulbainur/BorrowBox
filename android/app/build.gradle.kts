@@ -16,7 +16,7 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "de.oppahansi.lendnborrow"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -28,8 +28,8 @@ android {
         applicationId = "de.oppahansi.lendnborrow"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -42,10 +42,22 @@ android {
                 val alias = keystoreProps.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS") ?: ""
                 val keyPwd = keystoreProps.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD") ?: ""
 
-                storeFile = file(storeFilePath)
+                val keystoreFile = if (file(storeFilePath).exists()) {
+                    file(storeFilePath)
+                } else if (rootProject.file(storeFilePath).exists()) {
+                    rootProject.file(storeFilePath)
+                } else {
+                    file(storeFilePath)
+                }
+
+                storeFile = keystoreFile
                 storePassword = storePwd
                 keyAlias = alias
                 keyPassword = keyPwd
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
             }
         }
     }
@@ -54,6 +66,8 @@ android {
             val releaseSigning = signingConfigs.findByName("release")
             if (releaseSigning != null) {
                 signingConfig = releaseSigning
+            } else {
+                throw GradleException("Release signing configuration is missing. Please configure android/key.properties with storeFile, storePassword, keyAlias, and keyPassword.")
             }
             isMinifyEnabled = false // Optional: disable minification, adjust as needed
             isShrinkResources = false
